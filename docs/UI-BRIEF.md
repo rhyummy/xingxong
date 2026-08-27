@@ -7,58 +7,41 @@ generated components back in.
 
 ## The prompt
 
-> Build a **procurement operations console** for an autonomous spare-parts supply chain agent
-> used by industrial buyers in India. React + Tailwind, dark-first.
+> A **procurement operations console** for an autonomous spare-parts supply chain agent, for
+> Indian industrial buyers. React + Tailwind, dark-first.
 >
-> **Design direction — read this first.** This must look like a piece of industrial operations
-> software, not a SaaS landing page. Specifically avoid: purple/blue gradient heroes,
-> glassmorphism, oversized rounded cards, centered hero text, emoji as icons, and pastel
-> "friendly" palettes. Reference points are Bloomberg Terminal, Linear, and Vercel's dashboard —
-> dense, typographically precise, information-first. Small radii (4–6px), hairline borders,
-> generous internal padding but tight vertical rhythm. Numbers must use `tabular-nums` and align
-> right in every column. Semantic colour (success / warning / critical) is separate from the
-> single accent hue and carries meaning, never decoration. Encode state in *form* as well as
-> colour — a left severity stripe, a pill, a rule — so status reads at a glance without relying
-> on hue alone.
+> **Design direction.** Industrial operations software, not a SaaS landing page. Avoid gradient
+> heroes, glassmorphism, oversized rounded cards, centered text, emoji icons, pastels.
+> References: Bloomberg Terminal, Linear, Vercel dashboard — dense, precise, information-first.
+> Small radii, hairline borders, tight vertical rhythm. Numbers use `tabular-nums`, right-aligned. Semantic colour (success/warning/critical) is separate from the
+> accent. Encode state in form too — a left severity stripe, a pill — so status reads without
+> relying on hue.
 >
-> Currency is **Indian rupees** with Indian digit grouping: `₹78,66,144`, never `₹7,866,144`.
+> Currency is Indian rupees, Indian grouping: `₹78,66,144`, never `₹7,866,144`.
 >
-> **Three tabs in a single-page console:**
+> **Tab 1 — Run pipeline.** Grid of ~40 part cards: ID, name, stock vs. reorder threshold, unit
+> cost, supplier count, criticality. Flag parts below reorder point. One selectable; a primary
+> button runs the pipeline.
 >
-> **1. Run pipeline.** A grid of ~40 spare-part cards, each showing part ID, name, current stock
-> vs. reorder threshold, unit cost, supplier count, and a criticality tag (standard / high /
-> critical). Parts below their reorder point are visually flagged. One part is selectable; a
-> primary action button triggers the pipeline.
+> Four numbered **agent cards** then reveal in sequence: name, status pill, metrics row,
+> reasoning paragraph. Agent 2 adds a ranked supplier table, selected row highlighted. Agent 3,
+> when escalating, lists two alternatives.
 >
-> After triggering, four **agent result cards** appear in sequence (staggered reveal, ~700ms
-> apart), numbered 1–4. Each shows the agent name, a status pill, a compact metrics row, and a
-> paragraph of the agent's own reasoning. Agent 2 additionally renders a ranked supplier table
-> with the selected row highlighted. Agent 3, when it escalates, lists the top-2 ranked
-> alternatives for the human approver.
+> Then an **AI Advisor card** that reads as a different *kind* of thing from the four above
+> (different accent, marked "advisory only"): verdict, confidence, a bulleted list of which tools
+> it chose to call, reasoning, highlighted risk line.
 >
-> Then a visually distinct **AI Advisor card** — this one should read as a different *kind* of
-> thing from the four deterministic agents above it (different accent, marked "advisory only").
-> It shows a recommendation verdict, a confidence level, a bulleted list of which investigation
-> tools the agent chose to call, its reasoning, and a highlighted risk line.
+> Then an **outcome panel**: stat tiles (status, order value, decision time, hours saved), a
+> list-price vs. chosen-price comparison with percentage premium, summary paragraph. Assumed
+> figures need footnotes separating them from measured ones.
 >
-> Finally an **outcome panel**: a row of stat tiles (final status, order value, decision time,
-> estimated hours saved), a small comparison block showing catalog list price vs. chosen supplier
-> price with the percentage premium, and a summary paragraph. Assumption-based figures need a
-> visible footnote treatment distinguishing them from measured ones — this matters, some numbers
-> are measured and some are estimates and the UI must not blur that.
+> **Tab 2 — History.** Dense audit table: timestamp, part, decision pill, order value, guardrails
+> failed, logistics outcome, Replay action. Expanding a row reuses tab 1's agent cards.
 >
-> **2. Decision history.** A dense audit table: timestamp, part, decision pill, order value,
-> guardrails failed, logistics outcome, and a "Replay" action per row. Expanding a row reveals
-> the full stored agent trail inline, reusing the same agent cards from tab 1.
+> **Tab 3 — Approvals.** PO cards: number, part, supplier, qty × unit price, total, with Reject
+> and Approve buttons. Below, a settled-orders table.
 >
-> **3. Approvals.** A queue of purchase orders awaiting human sign-off. Each is a card showing PO
-> number, part, supplier, quantity × unit price, total order value, and two actions: a
-> destructive-styled *Reject* and a primary *Approve purchase order*. Below, a table of settled
-> orders with status and who decided.
->
-> **Also provide:** an empty state for each tab, a loading skeleton, an error banner, and a
-> disabled/busy state for every button. Make it responsive down to tablet; tables scroll
-> horizontally inside their own container rather than breaking the page.
+> Include empty, loading, error and busy states. Tables scroll in their own container.
 
 ---
 

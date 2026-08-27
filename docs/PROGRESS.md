@@ -9,19 +9,22 @@
 
 ## 1. What exists right now
 
-A working system, not a mockup. Two commits, 43 files, ~2,100 lines of code.
+A working system, not a mockup. Five commits, 48 files, ~2,970 lines of code.
 
 | Layer | Built | Status |
 |---|---|---|
-| Backend API | Node + Express, 9 endpoints | Running on `:4000` |
+| Backend API | Node + Express, 8 endpoints | Running on `:4000` |
 | Deterministic agents | 4 chained agents + guardrails | All paths verified on real data |
 | Agentic layer | Tool-calling Escalation Advisor on a state graph | Verified across 4 escalation types |
 | Database | Supabase, 6 tables, RLS enabled | Seeded, 3,600+ rows |
 | Dataset | Deterministic synthetic generator | 40 parts, 15 suppliers, 90 days |
-| Dashboard | React + Vite | Running on `:5173` |
+| Dashboard | React + Vite, 3 tabs | Running on `:5173` |
+| Audit trail UI | History list + full trail replay | Working |
+| Approval UI | Pending queue, approve/reject | Working |
+| Security | CORS allowlist, zod, rate limits, approval gate | Verified by test |
 | Docs | README, build-status page, this file | Current |
 
-**Not yet built:** run-history UI, PO approval UI, authentication, 21st.dev frontend rebuild.
+**Not yet built:** full authentication (shared secret only), 21st.dev frontend rebuild.
 
 ---
 
@@ -32,6 +35,7 @@ A working system, not a mockup. Two commits, 43 files, ~2,100 lines of code.
                  │  HTTP POST /api/pipeline/run  {partId}
                  ▼
         Express routes (:4000)
+          CORS allowlist · zod validation · rate limits
                  │  runPipeline(partId)
                  ▼
    ┌─────── Orchestrator ─────────────────────┐
@@ -65,7 +69,7 @@ A working system, not a mockup. Two commits, 43 files, ~2,100 lines of code.
 
 ### How the agents actually connect
 
-[`server/src/orchestrator.js:15-18`](../server/src/orchestrator.js) is the entire chaining mechanism:
+[`server/src/orchestrator.js`](../server/src/orchestrator.js) is the entire chaining mechanism:
 
 ```js
 const demand     = runDemandPrediction(partId);
@@ -217,7 +221,30 @@ See [`server/src/agentic/graph.js`](../server/src/agentic/graph.js).
 
 ---
 
-## 6. The dataset
+## 6. The dashboard
+
+Three tabs, all backed by real endpoints.
+
+### Run pipeline
+Part picker across 40 parts flagging the 13 below reorder point. Agent cards reveal one at a
+time. On escalation the **Advisor card** appears, showing the recommendation, confidence, and —
+in plain language — which tools the agent chose to invoke ("Checked related parts on the line").
+Marked *advisory only* so it is never mistaken for the deciding step.
+
+### Decision history
+Every logged run with part, decision, order value, guardrails failed and logistics outcome;
+anomaly runs flagged. **Replay** expands any past run through the same `AgentStage` and
+`AdvisorCard` components a live run uses — no second read model to drift out of sync. The full
+trail is fetched on demand via `GET /api/runs/:id` rather than shipping every run's JSONB with
+the list.
+
+### Approvals
+Pending queue with order detail and approve/reject, wired to the secret-gated PATCH endpoint,
+plus a settled-orders table recording who decided what. This closes the human-in-the-loop story.
+
+---
+
+## 7. The dataset
 
 **40 parts · 15 suppliers · 122 part–supplier links · 3,600 usage records · 90 days**
 
@@ -236,7 +263,7 @@ Criticality: 24 standard · 13 high · 3 critical.
 
 ---
 
-## 7. Database
+## 8. Database
 
 | Table | Rows | Holds |
 |---|---|---|
@@ -256,7 +283,45 @@ publishable key; only the backend, holding the secret key, writes.
 
 ---
 
-## 8. Verified outcomes
+## 9. API
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/parts` | Catalog with `triggerReady` flag |
+| `POST /api/pipeline/run` | Full 4-agent chain |
+| `POST /api/agents/:name` | One agent in isolation |
+| `POST /api/agents/escalation-advisor` | Tool-calling advisor; 409 if the part auto-approves |
+| `GET /api/agents/escalation-advisor/graph` | Advisor node/edge topology |
+| `GET /api/runs` | Audit trail list |
+| `GET /api/runs/:id` | One run with its full stored trail |
+| `GET /api/purchase-orders` | Issued and pending POs |
+| `PATCH /api/purchase-orders/:id` | Approve or reject — secret-gated |
+
+---
+
+## 10. Metrics — what is measured vs. assumed
+
+Both original metrics were dishonest and have been replaced.
+
+| Metric | Was | Now |
+|---|---|---|
+| Time saved | Hardcoded `96 ÷ 2` constant | Measured wall-clock decision time, plus a benchmark-minus-measured estimate carrying its assumption inline. Escalations report `null` — approval still waits on a human, so no end-to-end claim is made. |
+| Cost | Compared against the *most expensive* vendor on file, so it read $0 exactly when the agent chose well | Compared against catalog list price from the parts master, set independently of any quote |
+
+**The cost comparison surfaced a real finding.** Comparing against the previous order proved
+circular — the deterministic agent picks the same supplier every run, so the delta was always
+zero. Against catalog list price, the agent pays **~12% above list** (P-1012: list $211.87 vs
+chosen $237.45).
+
+That is not a bug. The ranking weights reliability at 40% against price at 20%, so it
+deliberately buys a quality premium. It is reported as a premium, not dressed up as savings.
+
+**Implication for the pitch:** the ROI story is avoided stockouts and human hours, not unit
+price. Do not claim procurement savings.
+
+---
+
+## 11. Verified outcomes
 
 Across all 13 low-stock parts: **4 auto-approved, 9 escalated.** All four guardrail types fire.
 
@@ -280,7 +345,38 @@ Across all 13 low-stock parts: **4 auto-approved, 9 escalated.** All four guardr
 
 ---
 
-## 9. Bugs found and fixed
+## 12. Security
+
+**SQL injection is structurally unreachable** — the codebase contains no SQL. Every read and
+write goes through supabase-js, which builds parameterised PostgREST requests. There is no
+string concatenation to inject into. Verified by grep: no `rpc`, no raw queries, no
+template-literal SQL.
+
+### Controls, each verified by test
+
+| Control | Test | Result |
+|---|---|---|
+| zod validation | `partId` = `P-1001'; DROP TABLE parts;--` | 400 at the edge |
+| zod validation | `status` = `hacked` | 400, enum listed |
+| CORS allowlist | `Origin: https://evil.example` | 403 |
+| CORS allowlist | `Origin: http://localhost:5173` | 200 |
+| Approval gate | PATCH without header | 401 |
+| Approval gate | PATCH with correct secret | approved, actor recorded |
+| Rate limits | reads 120/min · pipeline 20/min · writes 10/min | enforced |
+
+Also: RLS on all tables, publishable key for browser reads only, secret key server-side and
+gitignored, 100 kB request body cap, terminal error handler so 5xx never leaks internals.
+
+### Remaining gap
+
+The approval gate is a **shared secret, not identity**. It stops an unauthenticated caller
+approving spend — the gap that matters here — but does not record *which* user approved. Real
+deployment needs Supabase Auth. When `APPROVAL_SECRET` is unset the endpoints run open and the
+server warns at startup.
+
+---
+
+## 13. Bugs found and fixed
 
 | Bug | Impact | Fix |
 |---|---|---|
@@ -289,70 +385,55 @@ Across all 13 low-stock parts: **4 auto-approved, 9 escalated.** All four guardr
 | Degenerate supplier scoring | Min–max forced 100-vs-0 whenever a part had two suppliers | Absolute reference scales |
 | Silent 5-part fallback | One transient Supabase blip quietly shrank a 40-part demo | 3× retry with backoff before fallback |
 | Audit row lost on missing column | Whole run unlogged if a migration was pending | Re-insert without the optional column |
+| Circular cost baseline | Comparing to the previous order always gave $0 — same agent, same supplier | Compare to catalog list price |
+| CORS rejection returned 500 | A refused origin read as a server fault | Terminal error handler returning 403 |
+| Stacked panel padding | `.panel` padding doubled with nested `.panel-pad` | `.panel-flush` modifier |
 | Wrong Groq model | `llama-3.3-70b-versatile` not on this account | Switched to `openai/gpt-oss-120b` |
 | Truncated LLM summaries | Reasoning model spent the token budget thinking | Raised budget, set `reasoning_effort: low` |
 | Rate-limited advisor | Back-to-back demo runs returned empty | 429/5xx retry honouring `Retry-After` |
 
 ---
 
-## 10. Security posture
+## 14. Known weaknesses
 
-**SQL injection is structurally unreachable** — the codebase contains no SQL. Every read and
-write goes through supabase-js, which builds parameterised PostgREST requests. There is no
-string concatenation to inject into. Verified by grep: no `rpc`, no raw queries, no
-template-literal SQL.
-
-**Already right:** RLS on all tables · publishable key for browser reads only · secret key
-server-side and gitignored · PO status changes validated against an allowlist.
-
-**Open gaps:**
-
-| Gap | Risk | Cost to fix |
-|---|---|---|
-| No authentication | Anyone reaching `:4000` can approve a $95k PO | Medium |
-| CORS wide open | `app.use(cors())` accepts every origin | Trivial |
-| No input validation | Malformed bodies throw instead of returning 400 | Small |
-| No rate limiting | Unauthenticated path spends Groq quota | Small |
+- **The agent pays above catalog list price** (~12%). Defensible as a deliberate reliability
+  premium, but do not pitch this system on procurement savings.
+- **Approval is a shared secret, not real auth.** No record of which human approved.
+- **Dashboard CSS is hand-rolled.** Functional and consistent, but the weakest visible part of
+  the build. Structure is now clean enough that restyling is component swaps, not logic rewrites.
+- **The manual-procurement benchmark is an assumption**, not a measurement of any real
+  organisation. Labelled as such everywhere it appears.
 
 ---
 
-## 11. Known weaknesses
+## 15. Remaining work
 
-- **`costAvoidance` reports $0 on most runs.** Computed as `mostExpensive − chosen`, but the
-  top-ranked supplier is often also the priciest (quality is weighted 65%). Reads zero exactly
-  when the agent performed well. Needs redefining against the status-quo supplier.
-- **`daysSaved` is a hardcoded constant** (96 ÷ 2) with no basis. Cannot survive "where does
-  that number come from?"
-- **Audit trail is invisible in the UI.** `pipeline_runs` and `purchase_orders` are populated
-  with working endpoints, but nothing surfaces them. The spec's headline "full decision audit
-  trail" feature is unshipped.
-- **No PO approval flow in the UI**, despite `PATCH /api/purchase-orders/:id` existing.
-- **Dashboard CSS is hand-rolled** and is the weakest visible part of the build.
-
----
-
-## 12. Remaining work
-
-| Priority | Item | Est. |
+| Priority | Item | Status |
 |---|---|---|
-| ~~1~~ | ~~Agentic layer with tool-calling~~ | **Done** |
-| 2 | Audit trail + PO approval UI (merges into frontend rebuild) | ~4 hrs |
-| 3 | Fix `costAvoidance` and `daysSaved` | ~1 hr |
-| 4 | CORS allowlist, zod validation, rate limiting, shared-secret header | ~2 hrs |
-
-**Blocked on input:** 21st.dev component links for the frontend rebuild.
+| 1 | Agentic layer with tool-calling | **Done** |
+| 2 | Audit trail UI | **Done** |
+| 3 | Fix fake metrics | **Done** |
+| 4 | PO approval UI | **Done** |
+| 5 | Basic security hardening | **Done** |
+| 6 | 21st.dev frontend rebuild | Blocked on component links |
+| 7 | Supabase Auth replacing the shared secret | Optional if time allows |
 
 **Manual step outstanding:** apply
-[`supabase/migrations/001_advisor.sql`](../supabase/migrations/001_advisor.sql) so advisor
-output persists to the audit trail. Everything works without it; the advisor just is not stored
-in history.
+[`supabase/migrations/001_advisor.sql`](../supabase/migrations/001_advisor.sql):
+
+```sql
+alter table pipeline_runs add column if not exists advisor jsonb;
+```
+
+Verified missing as of this writing. Without it the advisor shows on live runs but is not
+persisted, so replayed escalations lack it. Everything else works regardless.
 
 **Open question:** "agent garage" appeared in the judging criteria and is undefined to us —
 worth asking the organisers whether it is a deployment target with its own requirements.
 
 ---
 
-## 13. Running it
+## 16. Running it
 
 ```bash
 npm install
@@ -362,22 +443,35 @@ npm run dev            # API :4000 + dashboard :5173
 Supabase setup: apply `supabase/schema.sql`, then `supabase/migrations/*`, then
 `npm run seed -w server`.
 
-Demo order: **P-1038** (clean auto-approval) → **P-1026** (anomaly escalation, advisor returns
-INVESTIGATE_EQUIPMENT) → **P-1009** (single-source, inventory reroute).
+To exercise the approval gate, start with a secret set:
+
+```bash
+APPROVAL_SECRET=demo-secret-123 npm run dev
+```
+
+**Demo order:**
+1. **P-1038** — clean auto-approval, all guardrails pass
+2. **P-1026** — anomaly escalation; advisor calls `check_related_parts` and returns
+   `INVESTIGATE_EQUIPMENT`
+3. **Approvals tab** — approve the escalated PO, showing human-in-the-loop
+4. **Decision history** — replay the P-1026 trail to show nothing is a black box
 
 ---
 
-## 14. Commits
+## 17. Commits
 
 | SHA | Description |
 |---|---|
-| `9aec321` | Initial commit: MVP — 4 agents, guardrails, Supabase, dataset generator, dashboard |
+| `9aec321` | Initial MVP — 4 agents, guardrails, Supabase, dataset generator, dashboard |
 | `03d076d` | Agentic Escalation Advisor with tool-calling, state graph, reliability fixes |
+| `7be6414` | Progress summary doc |
+| `6bb54cc` | Honest metrics; CORS allowlist, zod, rate limits, approval gate |
+| `6850fdd` | Audit trail, advisor card, and PO approval surfaced in the UI |
 
 ---
 
 ## Security note
 
 Both Supabase keys and the Groq key were pasted into a chat transcript during development.
-**Rotate them after the hackathon.** `server/.env` is gitignored and verified absent from both
-commits — no keys were pushed.
+**Rotate them after the hackathon.** `server/.env` is gitignored and verified absent from every
+commit — no keys were pushed.

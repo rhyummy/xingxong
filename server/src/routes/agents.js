@@ -5,6 +5,7 @@ import { runProcurementDecision } from '../agents/procurementDecision.js';
 import { runLogisticsCoordination } from '../agents/logisticsCoordination.js';
 import { runEscalationAdvisor, ADVISOR_GRAPH_SHAPE } from '../agentic/escalationAdvisor.js';
 import { getPart } from '../data/index.js';
+import { schemas, validate, pipelineLimiter } from '../lib/security.js';
 
 const router = Router();
 
@@ -21,9 +22,8 @@ router.get('/escalation-advisor/graph', (req, res) => res.json(ADVISOR_GRAPH_SHA
 
 // The advisor is agentic, not deterministic, so it gets its own async route
 // rather than joining the synchronous agent registry below.
-router.post('/escalation-advisor', async (req, res) => {
-  const { partId } = req.body ?? {};
-  if (!partId) return res.status(400).json({ error: 'partId is required' });
+router.post('/escalation-advisor', pipelineLimiter, validate(schemas.partId), async (req, res) => {
+  const { partId } = req.body;
 
   try {
     const part = getPart(partId);
@@ -47,14 +47,13 @@ router.post('/escalation-advisor', async (req, res) => {
   }
 });
 
-router.post('/:name', (req, res) => {
+router.post('/:name', validate(schemas.partId), (req, res) => {
   const agent = AGENTS[req.params.name];
   if (!agent) {
     return res.status(404).json({ error: `Unknown agent: ${req.params.name}`, available: Object.keys(AGENTS) });
   }
 
-  const { partId } = req.body ?? {};
-  if (!partId) return res.status(400).json({ error: 'partId is required' });
+  const { partId } = req.body;
 
   try {
     res.json(agent(partId));

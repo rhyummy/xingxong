@@ -102,3 +102,24 @@ export async function setPurchaseOrderStatus(id, status, approvedBy) {
   if (error) throw new Error(error.message);
   return data;
 }
+
+/**
+ * The supplier and unit price used the last time this part was ordered.
+ * This is the only honest baseline available for cost comparison — comparing
+ * against the most expensive vendor on file flatters the number and reports
+ * zero savings precisely when the agent picked the best option.
+ * Returns null when the part has no order history yet.
+ */
+export async function getPreviousOrder(partId) {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from('purchase_orders')
+    .select('supplier_id, unit_price, created_at')
+    .eq('part_id', partId)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error || !data?.length) return null;
+  return { supplierId: data[0].supplier_id, unitPrice: Number(data[0].unit_price) };
+}

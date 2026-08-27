@@ -14,25 +14,29 @@ async function request(path, options) {
   }
 
   if (!res.ok) {
-    // Validation failures carry per-field detail worth surfacing.
     const detail = body.details?.map((d) => `${d.field}: ${d.problem}`).join('; ');
     throw new Error(detail ? `${body.error} — ${detail}` : body.error || 'Request failed');
   }
   return body;
 }
 
-const json = (body) => ({
+const post = (body) => ({
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(body),
 });
 
+export const fetchHealth = () => request('/api/health');
 export const fetchParts = () => request('/api/parts');
+export const fetchStats = () => request('/api/parts/-/stats');
+export const fetchPart = (id) => request(`/api/parts/${encodeURIComponent(id)}`);
 
-export const runPipeline = (partId) => request('/api/pipeline/run', json({ partId }));
+export const runPipeline = (partId) => request('/api/pipeline/run', post({ partId }));
+export const runAgent = (name, partId) => request(`/api/agents/${name}`, post({ partId }));
+export const runAdvisor = (partId) => request('/api/agents/escalation-advisor', post({ partId }));
+export const fetchAdvisorGraph = () => request('/api/agents/escalation-advisor/graph');
 
-export const fetchRuns = (limit = 25) => request(`/api/runs?limit=${limit}`);
-
+export const fetchRuns = (limit = 50) => request(`/api/runs?limit=${limit}`);
 export const fetchRun = (id) => request(`/api/runs/${encodeURIComponent(id)}`);
 
 export const fetchPurchaseOrders = (limit = 50) => request(`/api/purchase-orders?limit=${limit}`);

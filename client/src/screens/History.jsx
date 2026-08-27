@@ -29,13 +29,13 @@ function Replay({ runId }) {
 
   const steps = run.steps ?? [];
   if (!steps.length) {
-    return <Panel><Empty>This run predates full trail capture — only its summary row exists.</Empty></Panel>;
+    return <Panel><Empty>No detailed trail saved for this run.</Empty></Panel>;
   }
 
   return (
     <div className="stack">
       <Panel
-        title="Audit trail"
+        title="Full Trail"
         sub={`${run.part_id} · ${relTime(run.created_at)}`}
         right={
           <>
@@ -49,7 +49,7 @@ function Replay({ runId }) {
             <span className="pipe-mark done">✓</span>
             <div>
               <div className="pipe-t">Trigger</div>
-              <div className="pipe-s">Stock crossed the reorder threshold</div>
+              <div className="pipe-s">Stock hit reorder point</div>
             </div>
           </div>
           {steps.map((s, i) => (
@@ -81,7 +81,7 @@ function Replay({ runId }) {
               {run.status === 'auto-approved' ? '✓' : '●'}
             </span>
             <div>
-              <div className="pipe-t">Final outcome</div>
+              <div className="pipe-t">Result</div>
               <div className="pipe-s">
                 {run.status === 'auto-approved'
                   ? `PO auto-issued · ${money(run.order_value)}`
@@ -135,16 +135,16 @@ export default function History() {
       <ErrorBar message={error} />
 
       <Reveal><Panel
-        title="Decision history"
-        sub="Every pipeline run is logged and replayable"
+        title="Past Decisions"
+        sub="Click any row to replay"
         bodyClass="tight"
         right={
           <div className="seg">
             {[
               { id: 'all', label: 'All' },
               { id: 'escalated', label: 'Escalated' },
-              { id: 'auto', label: 'Auto-approved' },
-              { id: 'anomaly', label: 'Anomaly' },
+              { id: 'auto', label: 'Automated' },
+              { id: 'anomaly', label: 'Spikes' },
             ].map((f) => (
               <button key={f.id} className={filter === f.id ? 'on' : ''} onClick={() => setFilter(f.id)}>
                 {f.label}
@@ -165,8 +165,8 @@ export default function History() {
                   <th>When</th>
                   <th>Part</th>
                   <th>Decision</th>
-                  <th className="num">Order value</th>
-                  <th>Guardrails failed</th>
+                  <th className="num">Value</th>
+                  <th>Reason</th>
                   <th>Logistics</th>
                   <th />
                 </tr>
@@ -185,8 +185,8 @@ export default function History() {
                       {r.anomaly_detected && <StatusBadge label="anomaly" tone="crit" />}
                     </td>
                     <td className="num">{money(r.order_value)}</td>
-                    <td className="dim3">{r.failed_guardrails?.join(', ') || '—'}</td>
-                    <td className="dim3">{String(r.logistics_status ?? '—').replace(/-/g, ' ')}</td>
+                    <td className="dim3">{r.failed_guardrails?.length ? r.failed_guardrails.join(', ') : 'None'}</td>
+                    <td className="dim3">{String(r.logistics_status ?? 'not set').replace(/-/g, ' ')}</td>
                     <td>
                       <span className="btn sm">{runId === r.id ? 'Showing' : 'Replay'}</span>
                     </td>

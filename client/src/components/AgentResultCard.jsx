@@ -8,6 +8,14 @@ const AGENT_NO = {
   'Logistics Coordination': 4,
 };
 
+/** Short titles. The backend names are precise but long for a card header. */
+const AGENT_TITLE = {
+  'Demand Prediction': 'How much do we need?',
+  'Supplier Evaluation': 'Who should supply it?',
+  'Procurement Decision': 'Is it safe to order?',
+  'Logistics Coordination': 'Will it arrive in time?',
+};
+
 function SupplierScoreTable({ ranked, recommendedId }) {
   if (!ranked?.length) return null;
   return (
@@ -17,10 +25,10 @@ function SupplierScoreTable({ ranked, recommendedId }) {
           <tr>
             <th>Supplier</th>
             <th style={{ width: 96 }}>Score</th>
-            <th className="num">Unit price</th>
-            <th className="num">Lead</th>
-            <th className="num">Reliab.</th>
-            <th className="num">Defect</th>
+            <th className="num">Price</th>
+            <th className="num">Days</th>
+            <th className="num">Reliable</th>
+            <th className="num">Defects</th>
           </tr>
         </thead>
         <tbody>
@@ -56,20 +64,20 @@ function Facts({ step }) {
   if (step.agent === 'Demand Prediction') {
     return (
       <div className="facts">
-        <Fact label="Predicted qty" value={`${step.predictedQuantity} units`} />
-        <Fact label="Days to stockout" value={step.daysUntilStockout ?? '—'} />
-        <Fact label="Baseline / day" value={step.baselineDailyRate} />
-        <Fact label="Recent / day" value={step.recentDailyRate} />
-        <Fact label="Z-score" value={step.zScore} />
+        <Fact label="Order this many" value={`${step.predictedQuantity} units`} />
+        <Fact label="Days left" value={step.daysUntilStockout ?? '0'} />
+        <Fact label="Normal use" value={`${step.baselineDailyRate}/day`} />
+        <Fact label="Recent use" value={`${step.recentDailyRate}/day`} />
+        
       </div>
     );
   }
   if (step.agent === 'Supplier Evaluation') {
     return (
       <div className="facts">
-        <Fact label="Suppliers ranked" value={step.ranked?.length ?? 0} />
-        <Fact label="Recommended" value={step.recommended?.name ?? '—'} />
-        <Fact label="Single source" value={step.singleSourceRisk ? 'Yes' : 'No'} />
+        <Fact label="Options" value={step.ranked?.length ?? 0} />
+        <Fact label="Best pick" value={step.recommended?.name ?? '—'} />
+        <Fact label="Backup exists" value={step.singleSourceRisk ? 'No' : 'Yes'} />
       </div>
     );
   }
@@ -77,17 +85,17 @@ function Facts({ step }) {
     return (
       <div className="facts">
         <Fact label="Quantity" value={`${step.quantity ?? '—'} units`} />
-        <Fact label="Order value" value={money(step.totalCost)} />
-        <Fact label="PO number" value={step.poNumber ?? 'held'} />
-        <Fact label="Guardrails failed" value={step.failedGuardrails?.length ?? 0} />
+        <Fact label="Cost" value={money(step.totalCost)} />
+        <Fact label="Order no." value={step.poNumber ?? 'on hold'} />
+        <Fact label="Checks failed" value={step.failedGuardrails?.length ?? 0} />
       </div>
     );
   }
   return (
     <div className="facts">
-      <Fact label="Lead time" value={`${step.leadTimeDays ?? '—'}d`} />
-      <Fact label="Stockout runway" value={`${step.daysUntilStockout ?? '—'}d`} />
-      <Fact label="Backup" value={step.backupSupplier?.name ?? '—'} />
+      <Fact label="Arrives in" value={`${step.leadTimeDays ?? '—'} days`} />
+      <Fact label="Stock lasts" value={`${step.daysUntilStockout ?? 0} days`} />
+      <Fact label="Backup" value={step.backupSupplier?.name ?? 'none needed'} />
     </div>
   );
 }
@@ -104,10 +112,10 @@ export default function AgentResultCard({ step, guardrailExplanations }) {
     <section className={`panel agentcard ${tone} reveal`}>
       <header className="panel-head">
         <span className="agent-idx">A{no}</span>
-        <h2>{step.agent}</h2>
+        <h2>{AGENT_TITLE[step.agent] ?? step.agent}</h2>
         {step.status && <StatusBadge status={step.status} />}
-        {step.anomalyDetected && <StatusBadge label="anomaly" tone="crit" />}
-        {step.singleSourceRisk && <StatusBadge label="single source" tone="warn" />}
+        {step.anomalyDetected && <StatusBadge label="usage spike" tone="crit" />}
+        {step.singleSourceRisk && <StatusBadge label="1 supplier" tone="warn" />}
       </header>
 
       <div className="panel-body stack">
@@ -121,7 +129,7 @@ export default function AgentResultCard({ step, guardrailExplanations }) {
         {step.agent === 'Procurement Decision' && (
           <>
             <div>
-              <div className="label" style={{ marginBottom: 4 }}>Guardrails</div>
+              <div className="label" style={{ marginBottom: 4 }}>Safety checks</div>
               <GuardrailChecklist
                 failed={step.failedGuardrails ?? []}
                 explanations={guardrailExplanations}
@@ -130,16 +138,16 @@ export default function AgentResultCard({ step, guardrailExplanations }) {
 
             {step.status === 'escalated' && step.alternatives?.length > 0 && (
               <div>
-                <div className="label" style={{ marginBottom: 4 }}>Ranked options for the approver</div>
+                <div className="label" style={{ marginBottom: 4 }}>Other options</div>
                 <div className="tscroll">
                   <table>
                     <thead>
                       <tr>
                         <th>Supplier</th>
                         <th className="num">Score</th>
-                        <th className="num">Unit</th>
+                        <th className="num">Price</th>
                         <th className="num">Total</th>
-                        <th className="num">Lead</th>
+                        <th className="num">Days</th>
                       </tr>
                     </thead>
                     <tbody>

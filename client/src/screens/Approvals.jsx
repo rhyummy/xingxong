@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { fetchPurchaseOrders, setPurchaseOrderStatus, fetchParts, fetchRun, fetchRuns } from '../api.js';
 import { money, unitMoney } from '../money.js';
 import {
-  Panel, StatusBadge, ErrorBar, Empty, Skeleton, GuardrailChecklist, relTime, toneOf,
+  Panel, StatusBadge, ErrorBar, Empty, Skeleton, GuardrailChecklist, relTime, toneOf, partName,
 } from '../components/ui.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
 import Reveal from '../components/Reveal.jsx';
@@ -12,10 +12,10 @@ import Reveal from '../components/Reveal.jsx';
 function ApprovalTimeline({ run }) {
   const steps = run?.steps ?? [];
   const stages = [
-    { t: 'Demand prediction', s: steps[0] && (steps[0].anomalyDetected ? 'Anomaly detected' : 'Routine demand') },
-    { t: 'Supplier evaluation', s: steps[1] && `${steps[1].ranked?.length ?? 0} suppliers ranked` },
-    { t: 'Procurement guardrails', s: steps[2] && `${steps[2].failedGuardrails?.length ?? 0} failed` },
-    { t: 'Logistics risk', s: steps[3] && String(steps[3].status).replace(/-/g, ' ') },
+    { t: 'Demand checked', s: steps[0] && (steps[0].anomalyDetected ? 'Anomaly detected' : 'Routine demand') },
+    { t: 'Suppliers ranked', s: steps[1] && `${steps[1].ranked?.length ?? 0} suppliers ranked` },
+    { t: 'Safety checks', s: steps[2] && `${steps[2].failedGuardrails?.length ?? 0} failed` },
+    { t: 'Delivery checked', s: steps[3] && String(steps[3].status).replace(/-/g, ' ') },
   ];
 
   return (
@@ -32,17 +32,17 @@ function ApprovalTimeline({ run }) {
       <div className="pipe-step">
         <span className={`pipe-mark ${run?.advisor ? 'ai' : 'wait'}`}>{run?.advisor ? '✓' : '○'}</span>
         <div>
-          <div className="pipe-t">AI advisor recommendation</div>
+          <div className="pipe-t">AI advice</div>
           <div className="pipe-s">
-            {run?.advisor?.recommendation?.action ?? 'Not consulted'}
+            {run?.advisor?.recommendation?.action ?? 'Not needed'}
           </div>
         </div>
       </div>
       <div className="pipe-step">
         <span className="pipe-mark active">●</span>
         <div>
-          <div className="pipe-t">Awaiting human approval</div>
-          <div className="pipe-s">You are the decision point</div>
+          <div className="pipe-t">Your decision</div>
+          <div className="pipe-s">Approve or reject below</div>
         </div>
       </div>
     </div>
@@ -134,9 +134,9 @@ export default function Approvals() {
 
       <div className="l-order">
         {/* --------------------------------------------- pending queue */}
-        <Panel title="Pending approval" sub={`${pending.length} order${pending.length === 1 ? '' : 's'}`} bodyClass="tight">
+        <Panel title="Waiting for You" sub={`${pending.length} order${pending.length === 1 ? '' : 's'}`} bodyClass="tight">
           {pending.length === 0 ? (
-            <Empty>Nothing pending. Every recorded order cleared its guardrails.</Empty>
+            <Empty>Nothing waiting. All orders cleared.</Empty>
           ) : (
             pending.map((o) => (
               <button
@@ -149,7 +149,7 @@ export default function Approvals() {
                   <span className="mono" style={{ fontSize: 11.5 }}>{o.id}</span>
                   <span className="mono" style={{ fontSize: 11.5 }}>{money(o.total_cost)}</span>
                 </div>
-                <div style={{ fontSize: 12 }}>{partsById[o.part_id]?.name ?? o.part_id}</div>
+                <div style={{ fontSize: 12 }}>{partName(partsById[o.part_id]?.name ?? o.part_id)}</div>
                 <div className="dim3" style={{ fontSize: 11, marginTop: 2 }}>
                   {o.quantity} units · {relTime(o.created_at)}
                 </div>
@@ -161,11 +161,11 @@ export default function Approvals() {
         {/* ----------------------------------------------- order detail */}
         <div className="stack">
           {!selected ? (
-            <Panel><Empty>Select an order to review.</Empty></Panel>
+            <Panel><Empty>Pick an order on the left.</Empty></Panel>
           ) : (
             <>
               <Panel
-                title="Order summary"
+                title="Order"
                 sub={selected.id}
                 right={<StatusBadge status={selected.status} />}
               >
@@ -180,7 +180,7 @@ export default function Approvals() {
 
                   {part && (
                     <div className="dim" style={{ fontSize: 12.5 }}>
-                      {part.name} · {part.category} · list price {unitMoney(part.unitCost)}
+                      {partName(part.name)} · {part.category} · list price {unitMoney(part.unitCost)}
                     </div>
                   )}
 
@@ -189,10 +189,10 @@ export default function Approvals() {
                       Reject
                     </button>
                     <button className="btn" disabled={busy} onClick={() => navigate(`/parts/${selected.part_id}`)}>
-                      Request review
+                      View Part
                     </button>
                     <button className="btn approve" disabled={busy || selected.status !== 'pending-approval'} onClick={() => decide('approved')}>
-                      {busy ? 'Saving…' : 'Approve purchase order'}
+                      {busy ? 'Saving…' : 'Approve Order'}
                     </button>
                   </div>
                   {selected.status !== 'pending-approval' && (
@@ -205,7 +205,7 @@ export default function Approvals() {
               </Panel>
 
               {decision && (
-                <Panel title="Why was this escalated?" right={<StatusBadge status={decision.status} />}>
+                <Panel title="Why It Stopped" right={<StatusBadge status={decision.status} />}>
                   <GuardrailChecklist
                     failed={decision.failedGuardrails ?? []}
                     explanations={{
@@ -225,17 +225,17 @@ export default function Approvals() {
 
         {/* ------------------------------------------- approval timeline */}
         <div className="stack">
-          <Panel title="Approval timeline" sub="Staged decision path">
+          <Panel title="Progress">
             <ApprovalTimeline run={run} />
           </Panel>
 
           {run?.summary?.executiveSummary && (
-            <Panel title="Summary">
+            <Panel title="What Happened">
               <p className="reason">{run.summary.executiveSummary}</p>
             </Panel>
           )}
 
-          <Panel title="Settled orders" sub={`${settled.length}`} bodyClass="tight">
+          <Panel title="Done" sub={`${settled.length}`} bodyClass="tight">
             {settled.length === 0 ? (
               <Empty>None yet.</Empty>
             ) : (

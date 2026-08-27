@@ -2,17 +2,19 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchParts, runPipeline } from '../api.js';
 import { money, unitMoney } from '../money.js';
-import { Panel, StatusBadge, ErrorBar, Empty, Skeleton } from '../components/ui.jsx';
+import {
+  Panel, StatusBadge, ErrorBar, Empty, Skeleton, partName, shortName,
+} from '../components/ui.jsx';
 import AgentPipeline from '../components/AgentPipeline.jsx';
 import AgentResultCard from '../components/AgentResultCard.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
 import Reveal from '../components/Reveal.jsx';
 
 const FILTERS = [
-  { id: 'attention', label: 'Needs attention' },
+  { id: 'attention', label: 'Low stock' },
   { id: 'all', label: 'All parts' },
   { id: 'critical', label: 'Critical' },
-  { id: 'single', label: 'Single-sourced' },
+  { id: 'single', label: 'One supplier' },
 ];
 
 /** Urgency band, derived from how far below the reorder point a part sits. */
@@ -38,7 +40,7 @@ function QueueItem({ part, selected, onSelect }) {
         <span className="mono" style={{ fontSize: 12 }}>{part.id}</span>
         <StatusBadge label={u.band} tone={u.tone} />
       </div>
-      <div style={{ fontSize: 12, marginBottom: 4 }}>{part.name}</div>
+      <div style={{ fontSize: 12, marginBottom: 4 }}>{shortName(part.name)}</div>
       <div className="meter" style={{ marginBottom: 4 }}>
         <i className={u.tone} style={{ width: `${pct}%` }} />
       </div>
@@ -123,7 +125,7 @@ export default function TaskQueue() {
       <div className="l-queue">
         {/* --------------------------------------------------- queue */}
         <Panel
-          title="Procurement queue"
+          title="Parts Queue"
           sub={`${filtered.length} shown`}
           bodyClass="tight"
           className="panel-scroll"
@@ -131,7 +133,7 @@ export default function TaskQueue() {
           <div className="stack" style={{ gap: 8, padding: 10, borderBottom: '1px solid var(--line)' }}>
             <input
               className="input"
-              placeholder="Search part, ID or category…"
+              placeholder="Search parts"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -167,17 +169,17 @@ export default function TaskQueue() {
                     <div className="row" style={{ gap: 8 }}>
                       <h1 className="mono">{selected.id}</h1>
                       <StatusBadge label={selected.criticality} tone={selected.criticality === 'critical' ? 'crit' : selected.criticality === 'high' ? 'warn' : 'idle'} />
-                      {selected.triggerReady && <StatusBadge label="below reorder" tone="warn" />}
-                      {selected.supplierCount === 1 && <StatusBadge label="single source" tone="crit" />}
+                      {selected.triggerReady && <StatusBadge label="low stock" tone="warn" />}
+                      {selected.supplierCount === 1 && <StatusBadge label="1 supplier" tone="crit" />}
                     </div>
-                    <div className="dim" style={{ fontSize: 13, marginTop: 2 }}>{selected.name}</div>
+                    <div className="dim" style={{ fontSize: 13, marginTop: 2 }}>{partName(selected.name)}</div>
                   </div>
                   <div className="row">
                     <button className="btn sm" onClick={() => navigate(`/parts/${selected.id}`)}>
-                      Part intelligence
+                      Part Details
                     </button>
                     <button className="btn primary" onClick={run} disabled={running}>
-                      {running ? 'Analysing…' : 'Run analysis'}
+                      {running ? 'Working…' : 'Run Analysis'}
                     </button>
                   </div>
                 </div>
@@ -185,8 +187,8 @@ export default function TaskQueue() {
                 <div className="facts">
                   <div className="fact"><div className="k">Category</div><div className="v" style={{ fontSize: 12 }}>{selected.category}</div></div>
                   <div className="fact"><div className="k">On hand</div><div className="v">{selected.currentStock}</div></div>
-                  <div className="fact"><div className="k">Reorder at</div><div className="v">{selected.reorderThreshold}</div></div>
-                  <div className="fact"><div className="k">List price</div><div className="v" style={{ fontSize: 12 }}>{unitMoney(selected.unitCost)}</div></div>
+                  <div className="fact"><div className="k">Reorder Point</div><div className="v">{selected.reorderThreshold}</div></div>
+                  <div className="fact"><div className="k">List Price</div><div className="v" style={{ fontSize: 12 }}>{unitMoney(selected.unitCost)}</div></div>
                   <div className="fact"><div className="k">Suppliers</div><div className="v">{selected.supplierCount}</div></div>
                 </div>
               </div>
@@ -194,7 +196,7 @@ export default function TaskQueue() {
           )}
 
           {(running || result) && (
-            <Panel title="Pipeline" sub={running ? 'Analysing procurement request…' : 'Completed'}>
+            <Panel title="Pipeline" sub={running ? 'Working' : 'Done'}>
               <AgentPipeline
                 steps={result ? result.steps.slice(0, visible) : []}
                 running={running || (result && visible < result.steps.length)}
@@ -220,17 +222,17 @@ export default function TaskQueue() {
           {allShown && result.advisor && <AIAdvisorPanel advisor={result.advisor} />}
 
           {allShown && (
-            <Reveal><Panel title="Outcome" right={<StatusBadge status={result.summary.finalStatus} />}>
+            <Reveal><Panel title="Result" right={<StatusBadge status={result.summary.finalStatus} />}>
               <div className="stack">
                 <div className="facts">
-                  <div className="fact"><div className="k">Order value</div><div className="v">{money(result.summary.orderValue)}</div></div>
-                  <div className="fact"><div className="k">Decision time</div><div className="v">{result.summary.decisionSeconds}s</div></div>
+                  <div className="fact"><div className="k">Order Value</div><div className="v">{money(result.summary.orderValue)}</div></div>
+                  <div className="fact"><div className="k">Time Taken</div><div className="v">{result.summary.decisionSeconds}s</div></div>
                   <div className="fact">
-                    <div className="k">Est. hours saved</div>
+                    <div className="k">Hours Saved</div>
                     <div className="v">{result.summary.cycleTime.estimatedHoursSaved ?? 'not claimed'}</div>
                   </div>
                   <div className="fact">
-                    <div className="k">Vs. list price</div>
+                    <div className="k">Vs List Price</div>
                     <div className="v">
                       {result.summary.costComparison.premiumPct != null
                         ? `${result.summary.costComparison.premiumPct > 0 ? '+' : ''}${result.summary.costComparison.premiumPct}%`
@@ -245,13 +247,13 @@ export default function TaskQueue() {
                 <div className="row">
                   {result.summary.finalStatus === 'escalated' && (
                     <button className="btn primary" onClick={() => navigate(`/approve/${result.runId ?? ''}`)}>
-                      Review for approval
+                      Send for Approval
                     </button>
                   )}
                   <button className="btn" onClick={() => navigate(`/parts/${result.part.id}`)}>
-                    Open part intelligence
+                    Part Details
                   </button>
-                  <button className="btn" onClick={run} disabled={running}>Re-run analysis</button>
+                  <button className="btn" onClick={run} disabled={running}>Run Again</button>
                 </div>
               </div>
             </Panel></Reveal>
@@ -260,8 +262,7 @@ export default function TaskQueue() {
           {!running && !result && selected && (
             <Panel>
               <Empty>
-                Select <span className="mono">{selected.id}</span> and run the analysis to see all four
-                agents work through the decision.
+                Hit Run Analysis to see the four agents work through this part.
               </Empty>
             </Panel>
           )}

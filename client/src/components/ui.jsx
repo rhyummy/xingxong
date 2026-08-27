@@ -25,11 +25,25 @@ export const TONE = {
 
 export const toneOf = (status) => TONE[status] ?? 'idle';
 
+/** Plain-English wording for backend status codes. */
+const STATUS_WORDS = {
+  'auto-approved': 'ordered',
+  escalated: 'needs you',
+  'pending-approval': 'waiting',
+  approved: 'approved',
+  rejected: 'rejected',
+  issued: 'sent',
+  'on-track': 'on time',
+  'backup-sourced': 'backup found',
+  'reroute-inventory': 'reroute stock',
+  blocked: 'blocked',
+};
+
 export function StatusBadge({ status, label, tone, title }) {
   if (!status && !label) return null;
   return (
     <span className={`badge ${tone ?? toneOf(status)}`} title={title}>
-      {label ?? String(status).replace(/-/g, ' ')}
+      {label ?? STATUS_WORDS[status] ?? String(status).replace(/-/g, ' ')}
     </span>
   );
 }
@@ -37,6 +51,12 @@ export function StatusBadge({ status, label, tone, title }) {
 export function Dot({ tone = 'idle' }) {
   return <span className={`dot ${tone}`} />;
 }
+
+/** "Gearbox Coupling — Line C" reads lighter as "Gearbox Coupling · Line C". */
+export const partName = (name = '') => name.replace(/\s*—\s*/g, ' · ');
+
+/** Just the item, dropping the production line. */
+export const shortName = (name = '') => name.split('—')[0].trim();
 
 /* ------------------------------------------------------------------ panels */
 
@@ -107,39 +127,6 @@ export function Skeleton({ rows = 4 }) {
 
 /* ------------------------------------------------------------------ charts */
 
-/**
- * Inline usage sparkline. Deliberately plain: an area fill, the series line,
- * and an emphasised final point. `markFrom` shades the recent window that the
- * anomaly test compares against the baseline.
- */
-export function Sparkline({ series, height = 46, markFrom, tone = 'var(--accent)' }) {
-  if (!series?.length) return null;
-
-  const w = 300;
-  const h = height;
-  const max = Math.max(...series, 1);
-  const step = series.length > 1 ? w / (series.length - 1) : w;
-
-  const pts = series.map((v, i) => [i * step, h - (v / max) * (h - 4) - 2]);
-  const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-  const area = `${line} L${w},${h} L0,${h} Z`;
-  const [lx, ly] = pts[pts.length - 1];
-
-  const markX = markFrom != null ? markFrom * step : null;
-
-  return (
-    <svg className="spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img"
-         aria-label={`Usage trend, peak ${max} units per day`}>
-      {markX != null && (
-        <rect x={markX} y="0" width={w - markX} height={h} fill="var(--warn-bg)" />
-      )}
-      <path d={area} fill={tone} opacity=".1" />
-      <path d={line} fill="none" stroke={tone} strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
-      <circle cx={lx} cy={ly} r="2.2" fill={tone} />
-    </svg>
-  );
-}
-
 /** Horizontal score bar, 0–100. */
 export function ScoreBar({ score, tone }) {
   const t = tone ?? (score >= 80 ? 'ok' : score >= 72 ? 'warn' : 'crit');
@@ -153,11 +140,11 @@ export function ScoreBar({ score, tone }) {
 /* -------------------------------------------------------------- guardrails */
 
 const GUARDRAIL_LABEL = {
-  'cost-threshold': 'Order value within auto-approval ceiling',
-  'supplier-score-threshold': 'Supplier score meets the minimum',
-  'demand-anomaly': 'Demand is routine, not anomalous',
-  'single-source-risk': 'A fallback supplier exists',
-  'no-supplier-available': 'A supplier is available',
+  'cost-threshold': 'Within budget',
+  'supplier-score-threshold': 'Supplier is good enough',
+  'demand-anomaly': 'Usage looks normal',
+  'single-source-risk': 'Backup supplier exists',
+  'no-supplier-available': 'Supplier available',
 };
 
 const ALL_GUARDRAILS = [

@@ -3,8 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchPart, runAdvisor } from '../api.js';
 import { money, unitMoney } from '../money.js';
 import {
-  Panel, StatusBadge, ErrorBar, Empty, Skeleton, Sparkline, ScoreBar, Fact, relTime,
+  Panel, StatusBadge, ErrorBar, Empty, Skeleton, ScoreBar, Fact, relTime, partName,
 } from '../components/ui.jsx';
+import { LineChart, BarList, Donut, Legend } from '../components/Charts.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
 import Reveal from '../components/Reveal.jsx';
 
@@ -61,28 +62,28 @@ export default function PartDetail() {
                 <button className="btn sm" onClick={() => navigate(-1)}>← Back</button>
                 <h1 className="mono">{part.id}</h1>
                 <StatusBadge label={part.criticality} tone={criticalTone} />
-                {demand.anomalyDetected && <StatusBadge label="demand anomaly" tone="crit" />}
-                {evaluation.singleSourceRisk && <StatusBadge label="single source" tone="crit" />}
-                {part.triggerReady && <StatusBadge label="below reorder" tone="warn" />}
+                {demand.anomalyDetected && <StatusBadge label="usage spike" tone="crit" />}
+                {evaluation.singleSourceRisk && <StatusBadge label="1 supplier" tone="crit" />}
+                {part.triggerReady && <StatusBadge label="low stock" tone="warn" />}
               </div>
               <div className="dim" style={{ fontSize: 13, marginTop: 3 }}>
-                {part.name} · {part.category}
+                {partName(part.name)} · {part.category}
               </div>
             </div>
             <div className="row">
               <button className="btn" onClick={investigate} disabled={advisorBusy}>
-                {advisorBusy ? 'Investigating…' : 'Ask AI advisor'}
+                {advisorBusy ? 'Thinking…' : 'Ask AI'}
               </button>
               <button className="btn primary" onClick={() => navigate('/queue')}>Run analysis</button>
             </div>
           </div>
 
           <div className="facts">
-            <Fact label="On hand" value={part.currentStock} />
-            <Fact label="Reorder at" value={part.reorderThreshold} />
-            <Fact label="List price" value={unitMoney(part.unitCost)} />
-            <Fact label="Days to stockout" value={demand.daysUntilStockout ?? '—'} />
-            <Fact label="Predicted need" value={`${demand.predictedQuantity} units`} />
+            <Fact label="In Stock" value={part.currentStock} />
+            <Fact label="Reorder At" value={part.reorderThreshold} />
+            <Fact label="Price" value={unitMoney(part.unitCost)} />
+            <Fact label="Days Left" value={demand.daysUntilStockout ?? 0} />
+            <Fact label="Need" value={`${demand.predictedQuantity} units`} />
             <Fact label="Suppliers" value={part.supplierCount} />
           </div>
         </div>
@@ -92,35 +93,65 @@ export default function PartDetail() {
         <div className="stack">
           {/* ------------------------------------------- demand */}
           <Reveal><Panel
-            title="Predicted demand"
-            sub="90-day consumption · shaded window is the anomaly test period"
+            title="Daily Usage"
+            sub="Last 90 days"
             right={
-              demand.anomalyDetected
-                ? <StatusBadge label={`z = ${demand.zScore}`} tone="crit" />
-                : <StatusBadge label={`z = ${demand.zScore}`} tone="ok" />
+              <StatusBadge
+                label={demand.anomalyDetected ? 'Spike detected' : 'Normal'}
+                tone={demand.anomalyDetected ? 'crit' : 'ok'}
+              />
             }
           >
             <div className="stack">
-              <Sparkline
+              <LineChart
                 series={usageSeries}
-                height={58}
-                markFrom={usageSeries.length - 5}
-                tone={demand.anomalyDetected ? 'var(--crit)' : 'var(--accent)'}
+                height={170}
+                highlightFrom={usageSeries.length - 5}
+                baseline={demand.baselineDailyRate}
+                tone={demand.anomalyDetected ? 'crit' : 'accent'}
+                yLabel="Units used"
               />
-              <div className="facts">
-                <Fact label="Baseline / day" value={demand.baselineDailyRate} />
-                <Fact label="Recent / day" value={demand.recentDailyRate} />
-                <Fact label="Peak day" value={Math.max(...usageSeries, 0)} />
-                <Fact label="30-day projection" value={`${Math.ceil(demand.recentDailyRate * 30)} units`} />
+              <div className="chart-key">
+                <span><i className="k-line" /> Daily usage</span>
+                <span><i className="k-dash" /> Normal average</span>
+                <span><i className="k-band" /> Recent 5 days</span>
               </div>
-              <p className="reason">{demand.reasoning}</p>
+              <div className="facts">
+                <Fact label="Normal" value={`${demand.baselineDailyRate}/day`} />
+                <Fact label="Now" value={`${demand.recentDailyRate}/day`} />
+                <Fact label="Peak" value={Math.max(...usageSeries, 0)} />
+                <Fact label="Need" value={`${demand.predictedQuantity} units`} />
+              </div>
             </div>
           </Panel></Reveal>
 
           {/* ------------------------------------------ suppliers */}
+          <Reveal><Panel title="Supplier Scores" >
+            <div className="l-2">
+              <BarList
+                data={(evaluation.ranked ?? []).map((s) => ({
+                  label: s.name.split(' ')[0],
+                  value: s.score,
+                  tone: s.id === evaluation.recommended?.id ? 'ok' : 'idle',
+                }))}
+                max={100}
+              />
+              <BarList
+                data={(evaluation.ranked ?? []).map((s) => ({
+                  label: s.name.split(' ')[0],
+                  value: s.leadTimeDays,
+                  tone: s.leadTimeDays > (demand.daysUntilStockout ?? 99) ? 'crit' : 'ok',
+                }))}
+                unit="d"
+              />
+            </div>
+            <p className="note" style={{ marginTop: 10 }}>
+              Left: overall score. Right: delivery days. Red means it arrives too late.
+            </p>
+          </Panel></Reveal>
+
           <Reveal><Panel
-            title="Supplier options"
-            sub="Reliability 40% · defect rate 25% · price 20% · lead time 15%"
+            title="All Suppliers"
             bodyClass="tight"
           >
             <div className="tscroll">
@@ -129,10 +160,10 @@ export default function PartDetail() {
                   <tr>
                     <th>Supplier</th>
                     <th style={{ width: 110 }}>Score</th>
-                    <th className="num">Unit price</th>
-                    <th className="num">Lead time</th>
-                    <th className="num">Reliability</th>
-                    <th className="num">Defect rate</th>
+                    <th className="num">Price</th>
+                    <th className="num">Delivery</th>
+                    <th className="num">Reliable</th>
+                    <th className="num">Defects</th>
                     <th />
                   </tr>
                 </thead>
@@ -146,7 +177,7 @@ export default function PartDetail() {
                             <span>{s.name}</span>
                             {chosen && <StatusBadge label="recommended" tone="ok" />}
                           </div>
-                          <div className="dim3" style={{ fontSize: 11 }}>{s.region ?? '—'}</div>
+                          <div className="dim3" style={{ fontSize: 11 }}>{s.region ?? ''}</div>
                         </td>
                         <td>
                           <div className="mono" style={{ fontSize: 11 }}>{s.score}</div>
@@ -173,7 +204,7 @@ export default function PartDetail() {
           {advisor && <AIAdvisorPanel advisor={advisor} />}
 
           {/* --------------------------------- procurement history */}
-          <Reveal><Panel title="Procurement history" sub="Past decisions for this part" bodyClass="tight">
+          <Reveal><Panel title="Past Orders" bodyClass="tight">
             {history.length === 0 ? (
               <Empty>No decisions recorded for this part yet.</Empty>
             ) : (
@@ -198,8 +229,8 @@ export default function PartDetail() {
                           {h.anomaly_detected && <StatusBadge label="anomaly" tone="crit" />}
                         </td>
                         <td className="num">{money(h.order_value)}</td>
-                        <td className="dim3">{h.failed_guardrails?.join(', ') || '—'}</td>
-                        <td className="dim3">{String(h.logistics_status ?? '—').replace(/-/g, ' ')}</td>
+                        <td className="dim3">{h.failed_guardrails?.length ? h.failed_guardrails.join(', ') : 'None'}</td>
+                        <td className="dim3">{String(h.logistics_status ?? 'not set').replace(/-/g, ' ')}</td>
                         <td><Link className="btn sm" to={`/history/${h.id}`}>Replay</Link></td>
                       </tr>
                     ))}
@@ -212,20 +243,20 @@ export default function PartDetail() {
 
         {/* ------------------------------------------------ sidebar */}
         <div className="stack">
-          <Panel title="Quick actions">
+          <Panel title="Actions">
             <div className="stack" style={{ gap: 7 }}>
-              <button className="btn wide primary" onClick={() => navigate('/queue')}>Run full analysis</button>
+              <button className="btn wide primary" onClick={() => navigate('/queue')}>Run Analysis</button>
               <button className="btn wide" onClick={investigate} disabled={advisorBusy}>
-                {advisorBusy ? 'Investigating…' : 'Ask AI advisor'}
+                {advisorBusy ? 'Thinking…' : 'Ask AI'}
               </button>
-              <button className="btn wide" onClick={() => navigate('/approvals')}>Open approvals</button>
+              <button className="btn wide" onClick={() => navigate('/approvals')}>Approvals</button>
             </div>
             <p className="note" style={{ marginTop: 9 }}>
-              The advisor only responds when this part's guardrails would escalate.
+AI only responds when this part needs a human decision.
             </p>
           </Panel>
 
-          <Panel title="Related parts" sub="Same line or category" bodyClass="tight">
+          <Panel title="Related Parts" bodyClass="tight">
             {relatedParts.length === 0 ? (
               <Empty>No related parts on file.</Empty>
             ) : (
@@ -240,7 +271,7 @@ export default function PartDetail() {
                   >
                     <div>
                       <div className="alert-t mono" style={{ fontSize: 11.5 }}>{r.id}</div>
-                      <div className="alert-s">{r.name}</div>
+                      <div className="alert-s">{partName(r.name)}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <StatusBadge
@@ -257,8 +288,8 @@ export default function PartDetail() {
             )}
             <div className="panel-body">
               <p className="note">
-                Usage ratio compares each peer's recent consumption against its own baseline — the
-                signal the advisor uses to tell equipment failure from a demand rise.
+Numbers show how much more each part is being used than normal. Several
+                high values on one line usually means equipment trouble.
               </p>
             </div>
           </Panel>
@@ -281,7 +312,7 @@ export default function PartDetail() {
                 <span className="badge idle">vendor</span>
               </div>
             ))}
-            <div className="panel-body"><p className="note">Contact directory is placeholder data.</p></div>
+            <div className="panel-body"><p className="note">Sample contacts.</p></div>
           </Panel>
         </div>
       </div>

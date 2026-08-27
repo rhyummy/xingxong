@@ -1,181 +1,39 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchStats, fetchParts, fetchRuns, fetchHealth } from '../api.js';
+import { fetchStats, fetchParts, fetchRuns } from '../api.js';
 import { money } from '../money.js';
 import {
-  Panel, MetricCard, StatusBadge, Dot, ErrorBar, Empty, Skeleton, relTime, clockTime,
+  Panel, MetricCard, StatusBadge, Dot, ErrorBar, Empty, Skeleton, relTime, shortName,
 } from '../components/ui.jsx';
+import { Donut, Legend, BarList, ColumnChart, Gauge } from '../components/Charts.jsx';
 import Reveal from '../components/Reveal.jsx';
 
-/* ------------------------------------------------------------------- feed */
+const GUARDRAIL_NAME = {
+  'cost-threshold': 'Over budget',
+  'supplier-score-threshold': 'Weak supplier',
+  'demand-anomaly': 'Demand spike',
+  'single-source-risk': 'One supplier',
+};
 
-function severityOf(run) {
+function rowTone(run) {
   if (run.status === 'auto-approved') return 'ok';
-  if (run.anomaly_detected || run.failed_guardrails?.includes('single-source-risk')) return 'crit';
+  if (run.anomaly_detected) return 'crit';
   return 'warn';
 }
-
-function feedBadge(run) {
-  if (run.status === 'auto-approved') return { label: 'auto', tone: 'ok' };
-  if (run.anomaly_detected) return { label: 'anomaly', tone: 'crit' };
-  if (run.failed_guardrails?.includes('single-source-risk')) return { label: 'hold', tone: 'crit' };
-  return { label: 'escalated', tone: 'warn' };
-}
-
-function DecisionFeed({ runs, partsById, onOpen }) {
-  if (!runs.length) {
-    return (
-      <Empty>
-        No decisions recorded yet. Run the pipeline from the Task Queue and they will stream in here.
-      </Empty>
-    );
-  }
-
-  return (
-    <div>
-      {runs.map((r) => {
-        const part = partsById[r.part_id];
-        const badge = feedBadge(r);
-        return (
-          <div
-            key={r.id}
-            className={`feed-row sev-${severityOf(r)}`}
-            onClick={() => onOpen(r)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && onOpen(r)}
-          >
-            <StatusBadge label={badge.label} tone={badge.tone} />
-
-            <div>
-              <div className="feed-part">{r.part_id}</div>
-              <div className="feed-desc">{part?.name ?? 'Unknown part'}</div>
-            </div>
-
-            <div>
-              <div className="label">Value</div>
-              <div className="mono" style={{ fontSize: 11.5 }}>{money(r.order_value)}</div>
-            </div>
-
-            <div>
-              <div className="label">Logistics</div>
-              <div style={{ fontSize: 11.5 }} className="dim">
-                {String(r.logistics_status ?? '—').replace(/-/g, ' ')}
-              </div>
-            </div>
-
-            <div>
-              <div className="label">Guardrails</div>
-              <div style={{ fontSize: 11.5 }} className="dim">
-                {r.failed_guardrails?.length
-                  ? r.failed_guardrails.map((g) => g.replace(/-/g, ' ')).join(', ')
-                  : 'all passed'}
-              </div>
-            </div>
-
-            <div className="mono dim3" style={{ fontSize: 11 }}>{relTime(r.created_at)}</div>
-
-            <button className="btn sm" onClick={(e) => { e.stopPropagation(); onOpen(r); }}>
-              Open
-            </button>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* --------------------------------------------------------------- sidebar */
-
-function buildAlerts(stats, runs, health) {
-  const alerts = [];
-
-  if (stats?.anomaliesDetected > 0) {
-    alerts.push({
-      tone: 'crit',
-      title: `Demand anomaly on ${stats.anomaliesDetected} part${stats.anomaliesDetected > 1 ? 's' : ''}`,
-      sub: 'Consumption is running well above baseline — possible equipment failure',
-    });
-  }
-  if (stats?.pendingApprovals > 0) {
-    alerts.push({
-      tone: 'warn',
-      title: `${stats.pendingApprovals} order${stats.pendingApprovals > 1 ? 's' : ''} awaiting approval`,
-      sub: 'Guardrails blocked auto-issue; a buyer decision is required',
-    });
-  }
-  if (stats?.singleSourced > 0) {
-    alerts.push({
-      tone: 'warn',
-      title: `${stats.singleSourced} parts are single-sourced`,
-      sub: 'No fallback vendor exists if these suppliers slip',
-    });
-  }
-  const reroutes = runs.filter((r) => r.logistics_status === 'reroute-inventory').length;
-  if (reroutes > 0) {
-    alerts.push({
-      tone: 'crit',
-      title: `${reroutes} shipment${reroutes > 1 ? 's' : ''} cannot beat stockout`,
-      sub: 'Logistics recommends rerouting inventory from another site',
-    });
-  }
-  if (health?.catalogSource === 'local-json') {
-    alerts.push({
-      tone: 'crit',
-      title: 'Running on local fallback catalog',
-      sub: 'Supabase was unreachable at startup — figures may be incomplete',
-    });
-  }
-  if (!alerts.length) {
-    alerts.push({ tone: 'ok', title: 'No active alerts', sub: 'All monitored parts are within tolerance' });
-  }
-  return alerts;
-}
-
-function SystemHealth({ health, stats }) {
-  const rows = [
-    { k: 'API', v: health?.ok ? 'Responding' : 'Unreachable', tone: health?.ok ? 'ok' : 'crit' },
-    {
-      k: 'Catalog source',
-      v: health?.catalogSource === 'supabase' ? 'Supabase (live)' : 'Local JSON (fallback)',
-      tone: health?.catalogSource === 'supabase' ? 'ok' : 'warn',
-    },
-    { k: 'Decision pipeline', v: 'Deterministic · ready', tone: 'ok' },
-    { k: 'AI advisor', v: 'Standby — escalations only', tone: 'ai' },
-    { k: 'Parts tracked', v: `${stats?.totalParts ?? '—'} across catalog`, tone: 'idle' },
-  ];
-
-  return (
-    <div className="stack" style={{ gap: 0 }}>
-      {rows.map((r) => (
-        <div key={r.k} className="row" style={{ justifyContent: 'space-between', padding: '7px 13px', borderBottom: '1px solid var(--line-soft)' }}>
-          <span className="dim" style={{ fontSize: 12 }}>{r.k}</span>
-          <span className="row" style={{ gap: 6 }}>
-            <Dot tone={r.tone === 'ai' ? 'idle' : r.tone} />
-            <span style={{ fontSize: 11.5 }} className="dim3">{r.v}</span>
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ screen */
 
 export default function Operations() {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [parts, setParts] = useState([]);
   const [runs, setRuns] = useState([]);
-  const [health, setHealth] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   function load() {
     setLoading(true);
     setError(null);
-    Promise.all([fetchStats(), fetchParts(), fetchRuns(25), fetchHealth()])
-      .then(([s, p, r, h]) => { setStats(s); setParts(p); setRuns(r); setHealth(h); })
+    Promise.all([fetchStats(), fetchParts(), fetchRuns(30)])
+      .then(([s, p, r]) => { setStats(s); setParts(p); setRuns(r); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }
@@ -183,105 +41,237 @@ export default function Operations() {
   useEffect(load, []);
 
   const partsById = Object.fromEntries(parts.map((p) => [p.id, p]));
-  const alerts = buildAlerts(stats, runs, health);
 
-  const events = runs.slice(0, 8).map((r) => ({
-    t: clockTime(r.created_at),
-    text:
-      r.status === 'auto-approved'
-        ? `${r.part_id}: PO auto-issued, ${money(r.order_value)}`
-        : `${r.part_id}: escalated — ${r.failed_guardrails?.join(', ') || 'guardrail'}`,
+  const auto = runs.filter((r) => r.status === 'auto-approved').length;
+  const escalated = runs.length - auto;
+
+  // Which guardrail stopped orders most often.
+  const guardTally = {};
+  runs.forEach((r) => (r.failed_guardrails ?? []).forEach((g) => { guardTally[g] = (guardTally[g] ?? 0) + 1; }));
+  const guardData = Object.entries(guardTally)
+    .map(([k, v]) => ({ label: GUARDRAIL_NAME[k] ?? k, value: v, tone: 'warn' }))
+    .sort((a, b) => b.value - a.value);
+
+  // Stock health grouped by category.
+  const catTally = {};
+  parts.forEach((p) => {
+    catTally[p.category] ??= { total: 0, low: 0 };
+    catTally[p.category].total++;
+    if (p.triggerReady) catTally[p.category].low++;
+  });
+  const catData = Object.entries(catTally).map(([k, v]) => ({
+    label: k.slice(0, 5),
+    value: v.low,
+    tone: v.low > 3 ? 'crit' : v.low > 0 ? 'warn' : 'ok',
   }));
+
+  const atRisk = parts
+    .filter((p) => p.triggerReady)
+    .sort((a, b) => a.currentStock / a.reorderThreshold - b.currentStock / b.reorderThreshold)
+    .slice(0, 6);
 
   return (
     <div className="stack">
       <ErrorBar message={error} onRetry={load} />
 
-      <div className="l-ops">
-        {/* ------------------------------------------------ KPI stack */}
-        <div className="stack">
-          <Reveal delay={0}><MetricCard
-            label="Inventory health"
-            value={stats ? `${stats.inventoryHealth}%` : '—'}
-            sub="Parts above reorder point"
-            tone={stats && stats.inventoryHealth < 75 ? 'warn' : 'ok'}
-          /></Reveal>
-          <Reveal delay={0.04}><MetricCard
-            label="Autonomy rate"
-            value={stats?.autonomyRate != null ? `${stats.autonomyRate}%` : '—'}
-            sub="Decisions closed without a human"
-            tone={stats?.autonomyRate >= 50 ? 'ok' : 'warn'}
-          /></Reveal>
-          <Reveal delay={0.08}><MetricCard
-            label="Pending approvals"
-            value={stats?.pendingApprovals ?? '—'}
-            sub="Awaiting buyer decision"
-            tone={stats?.pendingApprovals > 0 ? 'warn' : undefined}
-          /></Reveal>
-          <Reveal delay={0.12}><MetricCard
-            label="Decisions processed"
-            value={stats?.decisionsProcessed ?? '—'}
-            sub="Full pipeline runs logged"
-          /></Reveal>
-          <Reveal delay={0.16}><MetricCard
-            label="Parts at risk"
-            value={stats?.partsAtRisk ?? '—'}
-            sub="Stockout within 7 days"
-            tone={stats?.partsAtRisk > 0 ? 'crit' : 'ok'}
-          /></Reveal>
+      <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+        <h1>Operations Overview</h1>
+        <div className="row">
+          <button className="btn sm" onClick={load}>Refresh</button>
+          <button className="btn primary" onClick={() => navigate('/queue')}>Run Analysis</button>
         </div>
+      </div>
 
-        {/* --------------------------------------------- decision feed */}
-        <Panel
-          title="Live decision feed"
-          sub="Autonomous procurement decisions — newest first"
-          bodyClass="tight"
-          right={
-            <>
-              <span className="label">{runs.length} logged</span>
-              <button className="btn sm" onClick={load}>Refresh</button>
-              <button className="btn sm primary" onClick={() => navigate('/queue')}>Run analysis</button>
-            </>
-          }
-        >
-          {loading ? <Skeleton rows={6} /> : (
-            <DecisionFeed
-              runs={runs}
-              partsById={partsById}
-              onOpen={(r) => navigate(`/history/${r.id}`)}
-            />
-          )}
-        </Panel>
+      {/* ------------------------------------------------------- KPI row */}
+      <div className="kpi-row">
+        {[
+          { label: 'Stock Health', value: stats ? `${stats.inventoryHealth}%` : '—', sub: 'in tolerance', tone: stats?.inventoryHealth < 75 ? 'warn' : 'ok' },
+          { label: 'Handled by AI', value: stats?.autonomyRate != null ? `${stats.autonomyRate}%` : '—', sub: 'no human needed', tone: 'ok' },
+          { label: 'Need Approval', value: stats?.pendingApprovals ?? '—', sub: 'waiting on you', tone: stats?.pendingApprovals > 0 ? 'warn' : undefined },
+          { label: 'Parts At Risk', value: stats?.partsAtRisk ?? '—', sub: 'stockout in 7 days', tone: 'crit' },
+          { label: 'Decisions Made', value: stats?.decisionsProcessed ?? '—', sub: 'total runs' },
+        ].map((k, i) => (
+          <Reveal key={k.label} delay={i * 0.04}>
+            <MetricCard {...k} />
+          </Reveal>
+        ))}
+      </div>
 
-        {/* ------------------------------------------------- sidebar */}
-        <div className="stack">
-          <Reveal><Panel title="Active alerts" sub="Issues requiring attention" bodyClass="tight">
-            {alerts.map((a, i) => (
-              <div className="alert-item" key={i}>
-                <Dot tone={a.tone} />
-                <div>
-                  <div className="alert-t">{a.title}</div>
-                  <div className="alert-s">{a.sub}</div>
-                </div>
-              </div>
-            ))}
-          </Panel></Reveal>
-
-          <Reveal delay={0.05}><Panel title="System health" sub="Telemetry and connection status" bodyClass="tight">
-            <SystemHealth health={health} stats={stats} />
-          </Panel></Reveal>
-
-          <Reveal delay={0.1}><Panel title="Recent events" sub="Chronological system log" bodyClass="tight">
-            <div style={{ padding: '7px 0' }}>
-              {events.length === 0 && <div className="empty">No events yet.</div>}
-              {events.map((e, i) => (
-                <div className="event" key={i}>
-                  <span className="t">{e.t}</span>
-                  <span>{e.text}</span>
-                </div>
-              ))}
+      {/* --------------------------------------------------- chart strip */}
+      <div className="l-3">
+        <Reveal>
+          <Panel title="Decision Split">
+            <div className="chart-split">
+              <Donut
+                slices={[
+                  { label: 'Automated', value: auto, tone: 'ok' },
+                  { label: 'Sent to human', value: escalated, tone: 'warn' },
+                ]}
+                center={runs.length ? `${Math.round((auto / runs.length) * 100)}%` : '—'}
+                centerLabel="automated"
+              />
+              <Legend
+                items={[
+                  { label: 'Automated', value: auto, tone: 'ok' },
+                  { label: 'Sent to human', value: escalated, tone: 'warn' },
+                ]}
+              />
             </div>
-          </Panel></Reveal>
+          </Panel>
+        </Reveal>
+
+        <Reveal delay={0.05}>
+          <Panel title="Why Orders Stopped">
+            {guardData.length === 0 ? (
+              <Empty>Nothing stopped yet.</Empty>
+            ) : (
+              <BarList data={guardData} />
+            )}
+          </Panel>
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <Panel title="Low Stock by Category">
+            <ColumnChart data={catData} />
+          </Panel>
+        </Reveal>
+      </div>
+
+      {/* ----------------------------------------------- feed + sidebar */}
+      <div className="l-feed">
+        <Reveal>
+          <Panel
+            title="Live Decisions"
+            bodyClass="tight"
+            right={<span className="label">{runs.length} total</span>}
+          >
+            {loading ? (
+              <Skeleton rows={6} />
+            ) : runs.length === 0 ? (
+              <Empty>No decisions yet. Hit Run Analysis to start.</Empty>
+            ) : (
+              <div className="tscroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Part</th>
+                      <th>Result</th>
+                      <th className="num">Value</th>
+                      <th>Reason</th>
+                      <th>Delivery</th>
+                      <th className="num">When</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {runs.slice(0, 12).map((r) => (
+                      <tr
+                        key={r.id}
+                        className={`clickable sev-${rowTone(r)}`}
+                        onClick={() => navigate(`/history/${r.id}`)}
+                      >
+                        <td>
+                          <div className="mono" style={{ fontSize: 11.5 }}>{r.part_id}</div>
+                          <div className="dim3" style={{ fontSize: 10.5 }}>
+                            {shortName(partsById[r.part_id]?.name ?? '')}
+                          </div>
+                        </td>
+                        <td>
+                          <StatusBadge
+                            label={r.status === 'auto-approved' ? 'Ordered' : 'Needs you'}
+                            tone={r.status === 'auto-approved' ? 'ok' : 'warn'}
+                          />
+                        </td>
+                        <td className="num">{money(r.order_value)}</td>
+                        <td className="dim3">
+                          {r.failed_guardrails?.length
+                            ? r.failed_guardrails.map((g) => GUARDRAIL_NAME[g] ?? g).join(', ')
+                            : 'All checks passed'}
+                        </td>
+                        <td className="dim3">
+                          {r.logistics_status === 'on-track' ? 'On time'
+                            : r.logistics_status === 'backup-sourced' ? 'Backup found'
+                            : r.logistics_status === 'reroute-inventory' ? 'Reroute stock'
+                            : '—'}
+                        </td>
+                        <td className="num dim3">{relTime(r.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+        </Reveal>
+
+        <div className="stack">
+          <Reveal>
+            <Panel title="Running Low" bodyClass="tight">
+              {atRisk.length === 0 ? (
+                <Empty>All parts stocked.</Empty>
+              ) : (
+                atRisk.map((p) => {
+                  const pct = (p.currentStock / p.reorderThreshold) * 100;
+                  const tone = pct <= 35 ? 'crit' : 'warn';
+                  return (
+                    <div
+                      className="lowrow"
+                      key={p.id}
+                      onClick={() => navigate(`/parts/${p.id}`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && navigate(`/parts/${p.id}`)}
+                    >
+                      <div className="row" style={{ justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12 }}>{shortName(p.name)}</span>
+                        <span className="mono dim3" style={{ fontSize: 11 }}>
+                          {p.currentStock}/{p.reorderThreshold}
+                        </span>
+                      </div>
+                      <Gauge value={p.currentStock} max={p.reorderThreshold} tone={tone} />
+                    </div>
+                  );
+                })
+              )}
+            </Panel>
+          </Reveal>
+
+          <Reveal delay={0.05}>
+            <Panel title="Alerts" bodyClass="tight">
+              {stats?.anomaliesDetected > 0 && (
+                <div className="alert-item">
+                  <Dot tone="crit" />
+                  <div>
+                    <div className="alert-t">{stats.anomaliesDetected} demand spikes</div>
+                    <div className="alert-s">Possible equipment failure</div>
+                  </div>
+                </div>
+              )}
+              {stats?.pendingApprovals > 0 && (
+                <div className="alert-item">
+                  <Dot tone="warn" />
+                  <div>
+                    <div className="alert-t">{stats.pendingApprovals} orders waiting</div>
+                    <div className="alert-s">Your approval needed</div>
+                  </div>
+                </div>
+              )}
+              {stats?.singleSourced > 0 && (
+                <div className="alert-item">
+                  <Dot tone="warn" />
+                  <div>
+                    <div className="alert-t">{stats.singleSourced} single-supplier parts</div>
+                    <div className="alert-s">No backup if they fail</div>
+                  </div>
+                </div>
+              )}
+              {!stats?.anomaliesDetected && !stats?.pendingApprovals && !stats?.singleSourced && (
+                <div className="alert-item">
+                  <Dot tone="ok" />
+                  <div><div className="alert-t">All clear</div></div>
+                </div>
+              )}
+            </Panel>
+          </Reveal>
         </div>
       </div>
     </div>

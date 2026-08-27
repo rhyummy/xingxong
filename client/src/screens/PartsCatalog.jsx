@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchParts } from '../api.js';
 import { unitMoney } from '../money.js';
-import { Panel, StatusBadge, ErrorBar, Empty, Skeleton } from '../components/ui.jsx';
+import {
+  Panel, StatusBadge, ErrorBar, Empty, Skeleton, partName,
+} from '../components/ui.jsx';
 import Reveal from '../components/Reveal.jsx';
 
 const CRIT_TONE = { critical: 'crit', high: 'warn', standard: 'idle' };
@@ -38,15 +40,15 @@ export default function PartsCatalog() {
       <ErrorBar message={error} />
 
       <Reveal><Panel
-        title="Parts catalog"
+        title="Parts"
         sub={`${shown.length} of ${parts.length}`}
         bodyClass="tight"
         right={
           <div className="seg">
             {[
               { id: 'all', label: 'All' },
-              { id: 'risk', label: 'Below reorder' },
-              { id: 'single', label: 'Single-sourced' },
+              { id: 'risk', label: 'Low stock' },
+              { id: 'single', label: 'One supplier' },
               { id: 'critical', label: 'Critical' },
             ].map((f) => (
               <button key={f.id} className={filter === f.id ? 'on' : ''} onClick={() => setFilter(f.id)}>
@@ -59,7 +61,7 @@ export default function PartsCatalog() {
         <div style={{ padding: 10, borderBottom: '1px solid var(--line)' }}>
           <input
             className="input"
-            placeholder="Search by ID, name or category…"
+            placeholder="Search parts"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -76,11 +78,11 @@ export default function PartsCatalog() {
                 <tr>
                   <th>Part</th>
                   <th>Category</th>
-                  <th className="num">On hand</th>
-                  <th className="num">Reorder at</th>
-                  <th className="num">List price</th>
+                  <th className="num">In Stock</th>
+                  <th className="num">Reorder At</th>
+                  <th className="num">Price</th>
                   <th className="num">Suppliers</th>
-                  <th>Flags</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,7 +94,7 @@ export default function PartsCatalog() {
                   >
                     <td>
                       <div className="mono" style={{ fontSize: 11.5 }}>{p.id}</div>
-                      <div className="dim3" style={{ fontSize: 11 }}>{p.name}</div>
+                      <div className="dim3" style={{ fontSize: 11 }}>{partName(p.name)}</div>
                     </td>
                     <td className="dim">{p.category}</td>
                     <td className="num">{p.currentStock}</td>
@@ -102,8 +104,8 @@ export default function PartsCatalog() {
                     <td>
                       <div className="row" style={{ gap: 4 }}>
                         <StatusBadge label={p.criticality} tone={CRIT_TONE[p.criticality]} />
-                        {p.triggerReady && <StatusBadge label="reorder" tone="warn" />}
-                        {p.supplierCount === 1 && <StatusBadge label="1 source" tone="crit" />}
+                        {p.triggerReady && <StatusBadge label="low" tone="warn" />}
+                        {p.supplierCount === 1 && <StatusBadge label="1 supplier" tone="crit" />}
                       </div>
                     </td>
                   </tr>

@@ -11,10 +11,10 @@ const ACTION_LABEL = {
 
 /** Plain-language names for the tools, so a non-technical reader follows it. */
 const TOOL_LABEL = {
-  get_usage_history: 'Pulled 90-day usage history',
-  compare_suppliers: 'Compared every supplier on file',
-  check_related_parts: 'Checked related parts on the same line',
-  get_past_decisions: 'Reviewed past decisions for this part',
+  get_usage_history: 'Usage history',
+  compare_suppliers: 'Supplier comparison',
+  check_related_parts: 'Other parts on the line',
+  get_past_decisions: 'Past orders',
 };
 
 /**
@@ -31,13 +31,12 @@ export default function AIAdvisorPanel({ advisor, compact = false }) {
       <section className="panel agentcard aicard">
         <header className="panel-head">
           <span className="agent-idx ai">AI</span>
-          <h2>Escalation Advisor</h2>
+          <h2>AI Advisor</h2>
           <StatusBadge label="unavailable" tone="idle" />
         </header>
         <div className="panel-body">
           <p className="reason">
-            The advisor could not complete: {advisor.error}. The guardrail decision stands
-            unchanged — this layer is advisory only.
+            AI could not finish: {advisor.error}. The safety checks above still stand.
           </p>
         </div>
       </section>
@@ -51,8 +50,8 @@ export default function AIAdvisorPanel({ advisor, compact = false }) {
     <section className="panel agentcard aicard reveal">
       <header className="panel-head">
         <span className="agent-idx ai">AI</span>
-        <h2>Escalation Advisor</h2>
-        <StatusBadge label="advisory only" tone="ai" title="Cannot approve spend or overturn a guardrail" />
+        <h2>AI Advisor</h2>
+        <StatusBadge label="AI advice" tone="ai" title="Advice only. Cannot approve spending." />
         {rec.confidence && (
           <StatusBadge label={`${rec.confidence} confidence`} tone={rec.confidence === 'high' ? 'ok' : 'warn'} />
         )}
@@ -71,7 +70,7 @@ export default function AIAdvisorPanel({ advisor, compact = false }) {
 
         {tools.length > 0 && (
           <div>
-            <div className="label" style={{ marginBottom: 4 }}>What it chose to investigate</div>
+            <div className="label" style={{ marginBottom: 4 }}>What it checked</div>
             <div className="stack" style={{ gap: 3 }}>
               {tools.map((t, i) => (
                 <div key={`${t.tool}-${i}`} className="row" style={{ fontSize: 12 }}>
@@ -87,7 +86,7 @@ export default function AIAdvisorPanel({ advisor, compact = false }) {
 
         {rec.risk && (
           <div>
-            <div className="label" style={{ marginBottom: 3 }}>Risk if followed</div>
+            <div className="label" style={{ marginBottom: 3 }}>Watch out for</div>
             <p className="reason warn">{rec.risk}</p>
           </div>
         )}

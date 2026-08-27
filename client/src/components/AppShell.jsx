@@ -1,32 +1,31 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { fetchHealth } from '../api.js';
+import { fetchHealth, fetchStats } from '../api.js';
 import { WORKSPACES, WORKSPACE_TONE, clearSession } from '../workspaces.js';
 import { Dot } from './ui.jsx';
 import { useLenis } from '../lib/useLenis.js';
 
 const NAV = [
-  { to: '/', label: 'Operations', end: true },
-  { to: '/queue', label: 'Task Queue' },
-  { to: '/parts', label: 'Parts' },
-  { to: '/approvals', label: 'Approvals' },
-  { to: '/history', label: 'Decision History' },
+  { to: '/', label: 'Overview', icon: '▦', end: true },
+  { to: '/queue', label: 'Run Analysis', icon: '▶' },
+  { to: '/parts', label: 'Parts', icon: '▤' },
+  { to: '/approvals', label: 'Approvals', icon: '✓', badge: 'pendingApprovals' },
+  { to: '/history', label: 'History', icon: '↻' },
 ];
 
-/** Factory shifts, IST. Used only for the command-bar readout. */
-function currentShift(d) {
+function shiftName(d) {
   const h = d.getHours();
-  if (h >= 6 && h < 14) return 'A · 06:00–14:00';
-  if (h >= 14 && h < 22) return 'B · 14:00–22:00';
-  return 'C · 22:00–06:00';
+  if (h >= 6 && h < 14) return 'Shift A';
+  if (h >= 14 && h < 22) return 'Shift B';
+  return 'Shift C';
 }
 
 export default function AppShell({ session, onSignOut }) {
   const navigate = useNavigate();
   const [now, setNow] = useState(() => new Date());
   const [health, setHealth] = useState(null);
+  const [stats, setStats] = useState(null);
 
-  // Inertial scrolling on the console's own scroll container.
   useLenis('.page');
 
   useEffect(() => {
@@ -36,9 +35,11 @@ export default function AppShell({ session, onSignOut }) {
 
   useEffect(() => {
     fetchHealth().then(setHealth).catch(() => setHealth({ ok: false }));
+    fetchStats().then(setStats).catch(() => {});
   }, []);
 
   const workspace = WORKSPACES.find((w) => w.id === session?.workspaceId) ?? WORKSPACES[0];
+  const live = health?.catalogSource === 'supabase';
 
   function signOut() {
     clearSession();
@@ -48,61 +49,76 @@ export default function AppShell({ session, onSignOut }) {
 
   return (
     <div className="shell">
-      <header className="cmdbar">
-        <div className="cmdbar-brand">
+      {/* ------------------------------------------------------ sidebar */}
+      <aside className="side">
+        <div className="side-brand">
           <span className="cmdbar-mark">S</span>
-          SupplyChain Sentinel
+          <span>
+            <b>Sentinel</b>
+            <i>Procurement AI</i>
+          </span>
         </div>
 
-        <button className="workspace-chip" onClick={() => navigate('/signin')} title="Switch workspace">
+        <button className="side-ws" onClick={() => navigate('/signin')} title="Switch workspace">
           <Dot tone={WORKSPACE_TONE[workspace.status]} />
-          <span>{workspace.name}</span>
-          <span className="dim3">▾</span>
+          <span>
+            <b>{workspace.name.split(' ')[0]} Plant</b>
+            <i>{workspace.location.split('—').pop().trim()}</i>
+          </span>
+          <span className="dim3">⇄</span>
         </button>
 
-        <nav className="nav">
+        <nav className="side-nav">
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? 'on' : '')}>
-              {n.label}
+              <span className="ico">{n.icon}</span>
+              <span>{n.label}</span>
+              {n.badge && stats?.[n.badge] > 0 && <span className="nbadge">{stats[n.badge]}</span>}
             </NavLink>
           ))}
         </nav>
 
-        <div className="cmdbar-spacer" />
-
-        <div className="cmdbar-center">
-          <div className="clock">
-            <span className="label">Shift</span>
-            <span className="v">{currentShift(now)}</span>
+        <div className="side-foot">
+          <div className="side-status">
+            <Dot tone={live ? 'ok' : 'warn'} />
+            <span>{live ? 'Live data' : 'Offline mode'}</span>
           </div>
-          <div className="clock">
-            <span className="label">Local · {workspace.tz}</span>
-            <span className="v">
+          <div className="side-user">
+            <span className="avatar">{(session?.operator ?? 'O')[0].toUpperCase()}</span>
+            <span>
+              <b>{session?.operator ?? 'Operator'}</b>
+              <i>Buyer</i>
+            </span>
+          </div>
+          <button className="btn sm wide" onClick={signOut}>Sign out</button>
+        </div>
+      </aside>
+
+      {/* --------------------------------------------------------- main */}
+      <div className="main">
+        <header className="topbar">
+          <div className="topbar-clock">
+            <span className="mono">
               {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}
             </span>
+            <span className="dim3">{shiftName(now)}</span>
           </div>
-        </div>
+          <div className="cmdbar-spacer" />
+          {stats && (
+            <div className="topbar-pills">
+              <span className="badge idle">{stats.totalParts} parts</span>
+              {stats.partsAtRisk > 0 && <span className="badge crit">{stats.partsAtRisk} at risk</span>}
+              {stats.pendingApprovals > 0 && <span className="badge warn">{stats.pendingApprovals} to approve</span>}
+            </div>
+          )}
+        </header>
 
-        <div className="cmdbar-right">
-          <span className="badge idle" title={health?.catalogSource ? `Catalog: ${health.catalogSource}` : ''}>
-            <Dot tone={health?.ok ? 'ok' : 'crit'} />
-            {health?.catalogSource === 'supabase' ? 'live' : health?.ok ? 'fallback' : 'offline'}
-          </span>
-          <div className="clock" style={{ alignItems: 'flex-end' }}>
-            <span className="v" style={{ fontFamily: 'var(--sans)', fontSize: 12 }}>
-              {session?.operator ?? 'Operator'}
-            </span>
-            <span className="label">Procurement</span>
+        <main className="page">
+          <div className="page-wide">
+            <Outlet />
           </div>
-          <button className="btn sm" onClick={signOut}>Sign out</button>
-        </div>
-      </header>
-
-      <main className="page">
-        <div className="page-wide">
-          <Outlet />
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

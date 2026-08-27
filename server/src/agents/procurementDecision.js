@@ -1,5 +1,6 @@
 import { getPart } from '../data/index.js';
 import { GUARDRAILS } from '../lib/guardrails.js';
+import { money, unitMoney } from '../lib/money.js';
 import { runDemandPrediction } from './demandPrediction.js';
 import { runSupplierEvaluation } from './supplierEvaluation.js';
 
@@ -38,7 +39,7 @@ export function runProcurementDecision(partId, context = {}) {
   const autoApproved = failedGuardrails.length === 0;
 
   const guardrailExplanations = {
-    'cost-threshold': `order value $${totalCost} exceeds the $${GUARDRAILS.costThreshold} auto-approval ceiling`,
+    'cost-threshold': `order value ${money(totalCost)} exceeds the ${money(GUARDRAILS.costThreshold)} auto-approval ceiling`,
     'supplier-score-threshold': `top supplier scores ${supplier.score}, below the required ${GUARDRAILS.supplierScoreThreshold}`,
     'demand-anomaly': `usage spike flagged upstream (z=${demand.zScore}) — could signal equipment failure, not routine wear`,
     'single-source-risk': 'only one supplier is on file, so there is no fallback if this order slips',
@@ -55,7 +56,7 @@ export function runProcurementDecision(partId, context = {}) {
   }));
 
   const reasoning = autoApproved
-    ? `All guardrails passed: order value $${totalCost} is under the $${GUARDRAILS.costThreshold} ceiling, ${supplier.name} scores ${supplier.score} (min ${GUARDRAILS.supplierScoreThreshold}), demand is routine, and a backup supplier exists. Auto-generating PO for ${quantity} units and routing for e-signature.`
+    ? `All guardrails passed: order value ${money(totalCost)} is under the ${money(GUARDRAILS.costThreshold)} ceiling, ${supplier.name} scores ${supplier.score} (min ${GUARDRAILS.supplierScoreThreshold}), demand is routine, and a backup supplier exists. Auto-generating PO for ${quantity} units and routing for e-signature.`
     : `Held for human approval. ${failedGuardrails.length} guardrail${failedGuardrails.length > 1 ? 's' : ''} failed: ${failedGuardrails.map((g) => guardrailExplanations[g]).join('; ')}. Presenting the top ${alternatives.length} ranked option${alternatives.length > 1 ? 's' : ''} with full reasoning rather than acting unilaterally.`;
 
   return {

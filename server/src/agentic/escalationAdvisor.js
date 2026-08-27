@@ -16,6 +16,8 @@ Investigate before you conclude. You have tools; call the ones that matter for t
 
 Then reply with EXACTLY this structure and nothing else:
 
+All monetary amounts in this system are Indian rupees. Write them with the ₹ symbol, never $.
+
 RECOMMENDATION: <one of: APPROVE_AS_PROPOSED | APPROVE_ALTERNATE_SUPPLIER | SPLIT_ORDER | REDUCE_QUANTITY | INVESTIGATE_EQUIPMENT | REJECT>
 SUPPLIER: <supplier name, or "n/a">
 CONFIDENCE: <high | medium | low>

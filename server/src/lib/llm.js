@@ -26,7 +26,7 @@ export async function generateExecutiveSummary(trail, fallback) {
           {
             role: 'system',
             content:
-              'You are the executive summary layer of an autonomous supply chain agent. Given a decision trail as JSON, write 2-3 sentences of plain English for a procurement manager. Be concrete about numbers and state clearly whether the order was auto-approved or escalated, and why. No preamble, no markdown.',
+              'You are the executive summary layer of an autonomous supply chain agent. Given a decision trail as JSON, write 2-3 sentences of plain English for a procurement manager. Be concrete about numbers and state clearly whether the order was auto-approved or escalated, and why. All monetary amounts are Indian rupees — write them with the ₹ symbol, never $. No preamble, no markdown.',
           },
           { role: 'user', content: JSON.stringify(trail) },
         ],

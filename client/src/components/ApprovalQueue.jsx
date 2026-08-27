@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchPurchaseOrders, setPurchaseOrderStatus } from '../api.js';
+import { money, unitMoney } from '../money.js';
 
 const STATUS_TONE = {
   issued: 'ok',
@@ -73,9 +74,9 @@ export default function ApprovalQueue() {
                   <dt>Supplier</dt>
                   <dd>{o.supplier_id}</dd>
                   <dt>Quantity</dt>
-                  <dd>{o.quantity} units @ ${Number(o.unit_price).toFixed(2)}</dd>
+                  <dd>{o.quantity} units @ {unitMoney(o.unit_price)}</dd>
                   <dt>Order value</dt>
-                  <dd className="strong">${Number(o.total_cost).toLocaleString()}</dd>
+                  <dd className="strong">{money(o.total_cost)}</dd>
                 </dl>
 
                 <div className="po-actions">
@@ -125,7 +126,7 @@ export default function ApprovalQueue() {
                     <td className="id">{o.part_id}</td>
                     <td className="id">{o.supplier_id}</td>
                     <td className="num">{o.quantity}</td>
-                    <td className="num">${Number(o.total_cost).toLocaleString()}</td>
+                    <td className="num">{money(o.total_cost)}</td>
                     <td>
                       <span className={`pill p-${STATUS_TONE[o.status] ?? 'neut'}`}>{o.status}</span>
                     </td>

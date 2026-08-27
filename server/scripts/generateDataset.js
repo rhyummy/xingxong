@@ -28,12 +28,13 @@ const between = (min, max) => min + rng() * (max - min);
 const intBetween = (min, max) => Math.floor(between(min, max + 1));
 const round2 = (n) => Number(n.toFixed(2));
 
+// Costs are in INR, at magnitudes typical of Indian industrial MRO supply.
 const CATEGORIES = [
-  { name: 'Hydraulics', costRange: [25, 320], nouns: ['Pump Seal Kit', 'Cylinder Rod', 'Pressure Valve', 'Hose Assembly', 'Accumulator Bladder', 'Spool Valve'] },
-  { name: 'Electrical', costRange: [40, 900], nouns: ['Servo Motor Bearing', 'Control Relay', 'Contactor Block', 'Encoder Module', 'Power Supply Unit', 'Signal Isolator'] },
-  { name: 'Pneumatics', costRange: [8, 180], nouns: ['Air Filter Cartridge', 'Solenoid Valve', 'Rotary Actuator', 'Pressure Regulator', 'Quick Coupler'] },
-  { name: 'Mechanical', costRange: [12, 400], nouns: ['Drive Belt', 'Roller Chain', 'Gearbox Coupling', 'Thrust Bearing', 'Sprocket Set', 'Shaft Collar'] },
-  { name: 'Consumables', costRange: [3, 60], nouns: ['Lubricant Cartridge', 'Gasket Sheet', 'Weld Tip', 'Abrasive Disc', 'Filter Element'] },
+  { name: 'Hydraulics', costRange: [2000, 26000], nouns: ['Pump Seal Kit', 'Cylinder Rod', 'Pressure Valve', 'Hose Assembly', 'Accumulator Bladder', 'Spool Valve'] },
+  { name: 'Electrical', costRange: [3500, 75000], nouns: ['Servo Motor Bearing', 'Control Relay', 'Contactor Block', 'Encoder Module', 'Power Supply Unit', 'Signal Isolator'] },
+  { name: 'Pneumatics', costRange: [700, 15000], nouns: ['Air Filter Cartridge', 'Solenoid Valve', 'Rotary Actuator', 'Pressure Regulator', 'Quick Coupler'] },
+  { name: 'Mechanical', costRange: [1000, 33000], nouns: ['Drive Belt', 'Roller Chain', 'Gearbox Coupling', 'Thrust Bearing', 'Sprocket Set', 'Shaft Collar'] },
+  { name: 'Consumables', costRange: [250, 5000], nouns: ['Lubricant Cartridge', 'Gasket Sheet', 'Weld Tip', 'Abrasive Disc', 'Filter Element'] },
 ];
 
 const LINES = ['Line A', 'Line B', 'Line C', 'Press Shop', 'Paint Shop'];
@@ -132,7 +133,7 @@ export function generateDataset() {
         ? intBetween(1, Math.max(2, reorderThreshold - 1))
         : intBetween(reorderThreshold + 1, reorderThreshold * 3);
 
-      const criticality = unitCost > 400 ? 'critical' : unitCost > 120 ? 'high' : 'standard';
+      const criticality = unitCost > 33000 ? 'critical' : unitCost > 10000 ? 'high' : 'standard';
 
       const part = {
         id,

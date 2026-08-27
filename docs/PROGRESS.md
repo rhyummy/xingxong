@@ -3,7 +3,7 @@
 **Track:** Autonomous Spare Parts Supply Chain Orchestration Agent · AgentXcelerate
 **Repo:** github.com/rhyummy/xingxong
 **Status:** Working prototype, running end-to-end on live data
-**Last updated:** 27 Aug 2026
+**Last updated:** 27 Aug 2026 · **Currency:** INR throughout
 
 ---
 
@@ -128,7 +128,7 @@ No formula — four boolean gates. Auto-approve only if all pass.
 
 | Guardrail | Fails when |
 |---|---|
-| `cost-threshold` | `quantity × price > $5,000` |
+| `cost-threshold` | `quantity × price > ₹4,00,000` |
 | `supplier-score-threshold` | `topScore < 72` |
 | `demand-anomaly` | Agent 1 set `anomalyDetected` |
 | `single-source-risk` | part has exactly one supplier |
@@ -310,8 +310,8 @@ Both original metrics were dishonest and have been replaced.
 
 **The cost comparison surfaced a real finding.** Comparing against the previous order proved
 circular — the deterministic agent picks the same supplier every run, so the delta was always
-zero. Against catalog list price, the agent pays **~12% above list** (P-1012: list $211.87 vs
-chosen $237.45).
+zero. Against catalog list price, the agent pays **~12-16% above list** (P-1026: list ₹22,361.86 vs
+chosen ₹25,960.87).
 
 That is not a bug. The ranking weights reliability at 40% against price at 20%, so it
 deliberately buys a quality premium. It is reported as a premium, not dressed up as savings.
@@ -327,19 +327,19 @@ Across all 13 low-stock parts: **4 auto-approved, 9 escalated.** All four guardr
 
 | Part | Decision | Order value | Guardrails failed | Logistics |
 |---|---|---|---|---|
-| P-1012 | auto-approved | $4,274 | — | on track |
-| P-1023 | auto-approved | $1,539 | — | backup sourced |
-| P-1028 | auto-approved | $3,143 | — | backup sourced |
-| P-1038 | auto-approved | $1,329 | — | backup sourced |
-| P-1002 | escalated | $10,101 | cost | backup sourced |
-| P-1009 | escalated | $4,078 | score · single-source | reroute inventory |
-| P-1011 | escalated | $26,889 | cost | backup sourced |
-| P-1024 | escalated | $6,135 | cost · score | backup sourced |
-| P-1026 | escalated | $95,333 | cost · anomaly | backup sourced |
-| P-1027 | escalated | $4,655 | score | backup sourced |
-| P-1030 | escalated | $18,274 | cost · score | backup sourced |
-| P-1031 | escalated | $14,547 | cost · score | backup sourced |
-| P-1036 | escalated | $1,024 | score | backup sourced |
+| P-1012 | auto-approved | ₹3,58,867 | — | on track |
+| P-1023 | auto-approved | ₹1,28,342 | — | backup sourced |
+| P-1028 | auto-approved | ₹2,59,596 | — | backup sourced |
+| P-1038 | auto-approved | ₹1,10,747 | — | backup sourced |
+| P-1002 | escalated | ₹8,19,729 | cost | backup sourced |
+| P-1009 | escalated | ₹3,30,229 | score · single-source | reroute inventory |
+| P-1011 | escalated | ₹22,53,070 | cost | backup sourced |
+| P-1024 | escalated | ₹5,07,263 | cost · score | backup sourced |
+| P-1026 | escalated | ₹78,66,144 | cost · anomaly | backup sourced |
+| P-1027 | escalated | ₹3,84,701 | score | backup sourced |
+| P-1030 | escalated | ₹15,08,227 | cost · score | backup sourced |
+| P-1031 | escalated | ₹12,00,698 | cost · score | backup sourced |
+| P-1036 | escalated | ₹85,310 | score | backup sourced |
 
 **Anomaly detection accuracy:** 3/3 planted spikes caught, 0 false positives across 40 parts.
 

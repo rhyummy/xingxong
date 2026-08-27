@@ -5,6 +5,7 @@ import { runProcurementDecision } from './agents/procurementDecision.js';
 import { runLogisticsCoordination } from './agents/logisticsCoordination.js';
 import { generateExecutiveSummary } from './lib/llm.js';
 import { recordRun, getPreviousOrder } from './lib/auditLog.js';
+import { money } from './lib/money.js';
 import { runEscalationAdvisor } from './agentic/escalationAdvisor.js';
 
 // Stated assumption, not a measurement: industry surveys put routine indirect
@@ -61,7 +62,7 @@ export async function runPipeline(partId) {
 
   const fallbackSummary =
     decision.status === 'auto-approved'
-      ? `${part.name} hit its reorder point with ${demand.daysUntilStockout} days of stock left. All guardrails cleared, so a PO for ${decision.quantity} units was auto-issued to ${decision.supplier.name} at $${decision.totalCost}. Logistics status: ${logistics.status}.`
+      ? `${part.name} hit its reorder point with ${demand.daysUntilStockout} days of stock left. All guardrails cleared, so a PO for ${decision.quantity} units was auto-issued to ${decision.supplier.name} at ${money(decision.totalCost)}. Logistics status: ${logistics.status}.`
       : `${part.name} hit its reorder point with ${demand.daysUntilStockout} days of stock left, but ${decision.failedGuardrails.length} guardrail(s) blocked auto-approval (${decision.failedGuardrails.join(', ')}). The decision is queued for human review with ${decision.alternatives.length} ranked option(s) attached. Logistics status: ${logistics.status}.`;
 
   // The advisor only runs on escalations — when the deterministic layer has

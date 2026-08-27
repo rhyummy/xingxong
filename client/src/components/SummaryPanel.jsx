@@ -1,3 +1,4 @@
+import { money, unitMoney } from '../money.js';
 export default function SummaryPanel({ summary }) {
   const { cycleTime, costComparison } = summary;
 
@@ -15,7 +16,7 @@ export default function SummaryPanel({ summary }) {
         <div className="stat">
           <span className="stat-label">Order value</span>
           <span className="stat-value">
-            {summary.orderValue ? `$${summary.orderValue.toLocaleString()}` : '—'}
+            {money(summary.orderValue)}
           </span>
         </div>
         <div className="stat">
@@ -44,17 +45,17 @@ export default function SummaryPanel({ summary }) {
         <div className="cost-box">
           <div className="cost-row">
             <span>Catalog list price</span>
-            <span className="mono">${costComparison.listUnitPrice.toFixed(2)}/unit</span>
+            <span className="mono">{unitMoney(costComparison.listUnitPrice)}/unit</span>
           </div>
           <div className="cost-row">
             <span>Chosen supplier</span>
-            <span className="mono">${costComparison.chosenUnitPrice.toFixed(2)}/unit</span>
+            <span className="mono">{unitMoney(costComparison.chosenUnitPrice)}/unit</span>
           </div>
           <div className={`cost-row total ${costComparison.premiumPerUnit > 0 ? 'over' : 'under'}`}>
             <span>{costComparison.premiumPerUnit > 0 ? 'Premium over list' : 'Below list'}</span>
             <span className="mono">
               {costComparison.premiumPct > 0 ? '+' : ''}
-              {costComparison.premiumPct}% · ${Math.abs(costComparison.premiumOnThisOrder).toLocaleString()} on
+              {costComparison.premiumPct}% · {money(Math.abs(costComparison.premiumOnThisOrder))} on
               this order
             </span>
           </div>

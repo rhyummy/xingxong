@@ -1,4 +1,5 @@
 import SupplierTable from './SupplierTable.jsx';
+import { money } from '../money.js';
 
 const STATUS_TONE = {
   'auto-approved': 'ok',
@@ -23,7 +24,7 @@ function Metrics({ step }) {
     rows.push(['Single-source risk', step.singleSourceRisk ? 'yes' : 'no']);
   }
   if (step.agent === 'Procurement Decision') {
-    rows.push(['Order', `${step.quantity} units · $${step.totalCost}`]);
+    rows.push(['Order', `${step.quantity} units · ${money(step.totalCost)}`]);
     rows.push(['PO number', step.poNumber ?? '— (held for approval)']);
     rows.push([
       'Failed guardrails',
@@ -68,7 +69,7 @@ export default function AgentStage({ step, index }) {
           <ol>
             {step.alternatives.map((a) => (
               <li key={a.supplierId}>
-                {a.supplier} — score {a.score}, ${a.totalCost} total, {a.leadTimeDays}d lead time
+                {a.supplier} — score {a.score}, {money(a.totalCost)} total, {a.leadTimeDays}d lead time
               </li>
             ))}
           </ol>

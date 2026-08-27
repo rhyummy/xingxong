@@ -1,4 +1,5 @@
 import { getPart, suppliersByPart } from '../data/index.js';
+import { unitMoney } from '../lib/money.js';
 
 const WEIGHTS = {
   reliability: 0.4,
@@ -47,7 +48,7 @@ export function runSupplierEvaluation(partId) {
 
   const reasoning = singleSourceRisk
     ? `${top.name} is the only supplier on file for ${part.name} (lead time ${top.leadTimeDays}d, reliability ${top.reliabilityScore}). Single-source dependency is a supply risk — no fallback exists if this supplier slips.`
-    : `Ranked ${ranked.length} suppliers on reliability (40%), defect rate (25%), price (20%) and lead time (15%). ${top.name} leads at ${top.score}/100: $${top.price} per unit, ${top.leadTimeDays}-day lead time, ${top.reliabilityScore} reliability, ${top.defectRatePct}% defect rate. Runner-up ${ranked[1].name} scores ${ranked[1].score}.`;
+    : `Ranked ${ranked.length} suppliers on reliability (40%), defect rate (25%), price (20%) and lead time (15%). ${top.name} leads at ${top.score}/100: ${unitMoney(top.price)} per unit, ${top.leadTimeDays}-day lead time, ${top.reliabilityScore} reliability, ${top.defectRatePct}% defect rate. Runner-up ${ranked[1].name} scores ${ranked[1].score}.`;
 
   return {
     agent: 'Supplier Evaluation',

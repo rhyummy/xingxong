@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchRuns, fetchRun } from '../api.js';
 import AgentStage from './AgentStage.jsx';
 import AdvisorCard from './AdvisorCard.jsx';
+import { money } from '../money.js';
 
 function when(iso) {
   const d = new Date(iso);
@@ -75,7 +76,7 @@ export default function RunHistory() {
                     </span>
                     {r.anomaly_detected && <span className="pill p-crit">anomaly</span>}
                   </td>
-                  <td className="num">{r.order_value ? `$${Number(r.order_value).toLocaleString()}` : '—'}</td>
+                  <td className="num">{r.order_value ? money(r.order_value) : '—'}</td>
                   <td className="muted">{r.failed_guardrails?.join(', ') || '—'}</td>
                   <td className="muted">{r.logistics_status ?? '—'}</td>
                   <td>

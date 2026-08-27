@@ -1,3 +1,4 @@
+import { unitMoney } from '../money.js';
 export default function SupplierTable({ ranked, recommendedId }) {
   if (!ranked?.length) return null;
 
@@ -22,7 +23,7 @@ export default function SupplierTable({ ranked, recommendedId }) {
                 {s.id === recommendedId && <span className="badge badge-ok">selected</span>}
               </td>
               <td>{s.score}</td>
-              <td>${s.price.toFixed(2)}</td>
+              <td>{unitMoney(s.price)}</td>
               <td>{s.leadTimeDays}d</td>
               <td>{s.reliabilityScore}</td>
               <td>{s.defectRatePct}%</td>

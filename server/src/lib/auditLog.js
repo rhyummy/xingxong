@@ -80,6 +80,17 @@ export async function listRuns(limit = 20) {
   return data;
 }
 
+/**
+ * Full detail for one run, including the stored agent trail. Kept separate
+ * from listRuns so the history table does not ship every run's JSONB.
+ */
+export async function getRun(id) {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from('pipeline_runs').select('*').eq('id', id).single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 export async function listPurchaseOrders(limit = 50) {
   if (!supabase) return [];
   const { data, error } = await supabase

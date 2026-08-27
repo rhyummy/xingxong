@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listRuns, listPurchaseOrders, setPurchaseOrderStatus } from '../lib/auditLog.js';
+import { listRuns, getRun, listPurchaseOrders, setPurchaseOrderStatus } from '../lib/auditLog.js';
 import { schemas, validate, writeLimiter, requireApprovalSecret } from '../lib/security.js';
 
 const router = Router();
@@ -9,6 +9,16 @@ router.get('/runs', validate(schemas.listQuery, 'query'), async (req, res) => {
     res.json(await listRuns(req.validatedQuery.limit));
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/runs/:id', async (req, res) => {
+  try {
+    const run = await getRun(req.params.id);
+    if (!run) return res.status(404).json({ error: 'Run not found' });
+    res.json(run);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 

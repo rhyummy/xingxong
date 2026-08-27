@@ -1,0 +1,23 @@
+{
+  "P-1001": [
+    { "id": "S-01", "name": "Apex Hydraulics Co.", "price": 41.0, "leadTimeDays": 4, "reliabilityScore": 88, "defectRatePct": 1.2 },
+    { "id": "S-02", "name": "Metro Seal Supply", "price": 39.5, "leadTimeDays": 7, "reliabilityScore": 79, "defectRatePct": 2.5 },
+    { "id": "S-03", "name": "Precision Fluid Parts", "price": 45.0, "leadTimeDays": 3, "reliabilityScore": 93, "defectRatePct": 0.6 }
+  ],
+  "P-1002": [
+    { "id": "S-04", "name": "BeltWorks Industrial", "price": 17.25, "leadTimeDays": 2, "reliabilityScore": 95, "defectRatePct": 0.4 },
+    { "id": "S-05", "name": "Continental Drive Supply", "price": 18.9, "leadTimeDays": 5, "reliabilityScore": 85, "defectRatePct": 1.1 }
+  ],
+  "P-1003": [
+    { "id": "S-06", "name": "SingleSource Bearings Ltd.", "price": 126.0, "leadTimeDays": 10, "reliabilityScore": 81, "defectRatePct": 1.8 }
+  ],
+  "P-1004": [
+    { "id": "S-10", "name": "FilterPro Industrial", "price": 9.5, "leadTimeDays": 3, "reliabilityScore": 90, "defectRatePct": 0.7 },
+    { "id": "S-11", "name": "CleanAir Supply Co.", "price": 10.25, "leadTimeDays": 4, "reliabilityScore": 87, "defectRatePct": 1.0 }
+  ],
+  "P-1005": [
+    { "id": "S-07", "name": "CtrlTech Automation", "price": 255.0, "leadTimeDays": 6, "reliabilityScore": 90, "defectRatePct": 0.9 },
+    { "id": "S-08", "name": "Global Relay Systems", "price": 270.0, "leadTimeDays": 4, "reliabilityScore": 96, "defectRatePct": 0.3 },
+    { "id": "S-09", "name": "Budget Electric Parts", "price": 210.0, "leadTimeDays": 12, "reliabilityScore": 62, "defectRatePct": 4.5 }
+  ]
+}

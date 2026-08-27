@@ -1,0 +1,42 @@
+[
+  {
+    "id": "P-1001",
+    "name": "Hydraulic Pump Seal Kit",
+    "category": "Hydraulics",
+    "currentStock": 8,
+    "reorderThreshold": 15,
+    "unitCost": 42.5
+  },
+  {
+    "id": "P-1002",
+    "name": "Drive Belt - Conveyor A",
+    "category": "Mechanical",
+    "currentStock": 6,
+    "reorderThreshold": 10,
+    "unitCost": 18.0
+  },
+  {
+    "id": "P-1003",
+    "name": "Servo Motor Bearing",
+    "category": "Electrical",
+    "currentStock": 5,
+    "reorderThreshold": 12,
+    "unitCost": 128.0
+  },
+  {
+    "id": "P-1004",
+    "name": "Air Filter Cartridge",
+    "category": "Pneumatics",
+    "currentStock": 30,
+    "reorderThreshold": 20,
+    "unitCost": 9.75
+  },
+  {
+    "id": "P-1005",
+    "name": "PLC Control Relay",
+    "category": "Electrical",
+    "currentStock": 6,
+    "reorderThreshold": 10,
+    "unitCost": 260.0
+  }
+]

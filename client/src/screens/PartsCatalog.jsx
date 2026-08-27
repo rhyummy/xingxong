@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchParts } from '../api.js';
 import { unitMoney } from '../money.js';
 import { Panel, StatusBadge, ErrorBar, Empty, Skeleton } from '../components/ui.jsx';
+import Reveal from '../components/Reveal.jsx';
 
 const CRIT_TONE = { critical: 'crit', high: 'warn', standard: 'idle' };
 
@@ -36,7 +37,7 @@ export default function PartsCatalog() {
     <div className="stack">
       <ErrorBar message={error} />
 
-      <Panel
+      <Reveal><Panel
         title="Parts catalog"
         sub={`${shown.length} of ${parts.length}`}
         bodyClass="tight"
@@ -111,7 +112,7 @@ export default function PartsCatalog() {
             </table>
           </div>
         )}
-      </Panel>
+      </Panel></Reveal>
     </div>
   );
 }

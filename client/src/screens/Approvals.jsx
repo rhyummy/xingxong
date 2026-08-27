@@ -6,6 +6,7 @@ import {
   Panel, StatusBadge, ErrorBar, Empty, Skeleton, GuardrailChecklist, relTime, toneOf,
 } from '../components/ui.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
+import Reveal from '../components/Reveal.jsx';
 
 /** The five deterministic stages plus the advisor, as an approval timeline. */
 function ApprovalTimeline({ run }) {

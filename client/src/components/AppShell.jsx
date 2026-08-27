@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { fetchHealth } from '../api.js';
 import { WORKSPACES, WORKSPACE_TONE, clearSession } from '../workspaces.js';
 import { Dot } from './ui.jsx';
+import { useLenis } from '../lib/useLenis.js';
 
 const NAV = [
   { to: '/', label: 'Operations', end: true },
@@ -24,6 +25,9 @@ export default function AppShell({ session, onSignOut }) {
   const navigate = useNavigate();
   const [now, setNow] = useState(() => new Date());
   const [health, setHealth] = useState(null);
+
+  // Inertial scrolling on the console's own scroll container.
+  useLenis('.page');
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);

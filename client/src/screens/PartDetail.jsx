@@ -6,6 +6,7 @@ import {
   Panel, StatusBadge, ErrorBar, Empty, Skeleton, Sparkline, ScoreBar, Fact, relTime,
 } from '../components/ui.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
+import Reveal from '../components/Reveal.jsx';
 
 export default function PartDetail() {
   const { id } = useParams();
@@ -90,7 +91,7 @@ export default function PartDetail() {
       <div className="l-part">
         <div className="stack">
           {/* ------------------------------------------- demand */}
-          <Panel
+          <Reveal><Panel
             title="Predicted demand"
             sub="90-day consumption · shaded window is the anomaly test period"
             right={
@@ -114,10 +115,10 @@ export default function PartDetail() {
               </div>
               <p className="reason">{demand.reasoning}</p>
             </div>
-          </Panel>
+          </Panel></Reveal>
 
           {/* ------------------------------------------ suppliers */}
-          <Panel
+          <Reveal><Panel
             title="Supplier options"
             sub="Reliability 40% · defect rate 25% · price 20% · lead time 15%"
             bodyClass="tight"
@@ -167,12 +168,12 @@ export default function PartDetail() {
             <div className="panel-body">
               <p className="reason">{evaluation.reasoning}</p>
             </div>
-          </Panel>
+          </Panel></Reveal>
 
           {advisor && <AIAdvisorPanel advisor={advisor} />}
 
           {/* --------------------------------- procurement history */}
-          <Panel title="Procurement history" sub="Past decisions for this part" bodyClass="tight">
+          <Reveal><Panel title="Procurement history" sub="Past decisions for this part" bodyClass="tight">
             {history.length === 0 ? (
               <Empty>No decisions recorded for this part yet.</Empty>
             ) : (
@@ -206,7 +207,7 @@ export default function PartDetail() {
                 </table>
               </div>
             )}
-          </Panel>
+          </Panel></Reveal>
         </div>
 
         {/* ------------------------------------------------ sidebar */}

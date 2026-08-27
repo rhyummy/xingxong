@@ -39,11 +39,13 @@
   --ai-bg:       rgba(167, 139, 250, .12);
   --ai-line:     #3b3155;
 
-  --radius:      5px;
-  --radius-sm:   3px;
+  --radius:      11px;
+  --radius-sm:   7px;
 
-  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans:    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Display face carries the personality: headings, KPI figures, brand. */
+  --display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; min-width: 0; }
@@ -71,8 +73,8 @@ a { color: var(--accent); text-decoration: none; }
 
 /* ---------------------------------------------------------------- typography */
 
-h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
-h1 { font-size: 17px; }
+h1, h2, h3, h4 { margin: 0; font-family: var(--display); font-weight: 600; letter-spacing: -.015em; }
+h1 { font-size: 19px; }
 h2 { font-size: 14px; }
 h3 { font-size: 13px; }
 p  { margin: 0; }
@@ -105,7 +107,7 @@ p  { margin: 0; }
   border-bottom: 1px solid var(--line);
   flex: none;
 }
-.cmdbar-brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; white-space: nowrap; }
+.cmdbar-brand { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: -.015em; white-space: nowrap; }
 .cmdbar-mark {
   width: 20px; height: 20px;
   display: grid; place-items: center;
@@ -145,7 +147,7 @@ p  { margin: 0; }
 }
 .workspace-chip:hover { border-color: var(--accent); }
 
-.page { flex: 1; overflow-y: auto; padding: 14px; }
+.page { flex: 1; overflow-y: auto; padding: 16px; }
 .page-wide { max-width: 1680px; margin: 0 auto; }
 
 /* ------------------------------------------------------------------ panels */
@@ -162,14 +164,14 @@ p  { margin: 0; }
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 10px 13px;
+  padding: 12px 15px;
   border-bottom: 1px solid var(--line);
   flex: none;
 }
 .panel-head h2 { white-space: nowrap; }
 .panel-head .sub { font-size: 11.5px; color: var(--text-3); }
 .panel-head .right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.panel-body { padding: 13px; }
+.panel-body { padding: 15px; }
 .panel-body.tight { padding: 0; }
 .panel-scroll { overflow-y: auto; min-height: 0; }
 
@@ -183,16 +185,17 @@ p  { margin: 0; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 11px 13px;
+  padding: 13px 15px;
 }
 .metric .k { font-size: 10px; letter-spacing: .09em; text-transform: uppercase; color: var(--text-3); }
 .metric .v {
-  font-family: var(--mono);
+  font-family: var(--display);
   font-variant-numeric: tabular-nums;
-  font-size: 25px;
+  font-size: 28px;
   font-weight: 600;
-  line-height: 1.15;
-  margin-top: 3px;
+  line-height: 1.12;
+  margin-top: 4px;
+  letter-spacing: -.02em;
 }
 .metric .s { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 .metric .v.ok { color: var(--ok); }
@@ -205,8 +208,8 @@ p  { margin: 0; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 7px;
-  border-radius: var(--radius-sm);
+  padding: 2px 9px;
+  border-radius: 999px;
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 600;
@@ -282,7 +285,7 @@ tr.sev-ai   td:first-child { border-left-color: var(--ai); }
 }
 .btn:hover:not(:disabled) { border-color: var(--text-3); color: var(--text); }
 .btn:disabled { opacity: .42; cursor: not-allowed; }
-.btn.sm { padding: 3px 8px; font-size: 11px; }
+.btn.sm { padding: 3px 10px; font-size: 11px; border-radius: var(--radius-sm); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #04181b; font-weight: 600; }
 .btn.primary:hover:not(:disabled) { filter: brightness(1.08); }
 .btn.danger { color: var(--crit); border-color: rgba(229,86,78,.35); }
@@ -369,14 +372,21 @@ tr.sev-ai   td:first-child { border-left-color: var(--ai); }
   font-weight: 700;
   color: var(--text-3);
   background: var(--surface-3);
-  border-radius: var(--radius-sm);
-  padding: 2px 6px;
+  border-radius: 999px;
+  padding: 2px 8px;
   flex: none;
 }
 .agent-idx.ai { background: var(--ai-bg); color: var(--ai); }
 
+/* Staged agent reveal. Framer Motion handles scroll-triggered entrances;
+   this one is time-triggered, representing sequential pipeline work. */
 @keyframes slidein { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 .reveal { animation: slidein .26s ease-out both; }
+
+/* Lenis drives the scroll container; it needs the wrapper to not fight it. */
+.page { scrollbar-width: thin; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
 
 /* --------------------------------------------------------- pipeline steps */
 

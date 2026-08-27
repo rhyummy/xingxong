@@ -5,6 +5,7 @@ import { money } from '../money.js';
 import {
   Panel, MetricCard, StatusBadge, Dot, ErrorBar, Empty, Skeleton, relTime, clockTime,
 } from '../components/ui.jsx';
+import Reveal from '../components/Reveal.jsx';
 
 /* ------------------------------------------------------------------- feed */
 
@@ -199,35 +200,35 @@ export default function Operations() {
       <div className="l-ops">
         {/* ------------------------------------------------ KPI stack */}
         <div className="stack">
-          <MetricCard
+          <Reveal delay={0}><MetricCard
             label="Inventory health"
             value={stats ? `${stats.inventoryHealth}%` : '—'}
             sub="Parts above reorder point"
             tone={stats && stats.inventoryHealth < 75 ? 'warn' : 'ok'}
-          />
-          <MetricCard
+          /></Reveal>
+          <Reveal delay={0.04}><MetricCard
             label="Autonomy rate"
             value={stats?.autonomyRate != null ? `${stats.autonomyRate}%` : '—'}
             sub="Decisions closed without a human"
             tone={stats?.autonomyRate >= 50 ? 'ok' : 'warn'}
-          />
-          <MetricCard
+          /></Reveal>
+          <Reveal delay={0.08}><MetricCard
             label="Pending approvals"
             value={stats?.pendingApprovals ?? '—'}
             sub="Awaiting buyer decision"
             tone={stats?.pendingApprovals > 0 ? 'warn' : undefined}
-          />
-          <MetricCard
+          /></Reveal>
+          <Reveal delay={0.12}><MetricCard
             label="Decisions processed"
             value={stats?.decisionsProcessed ?? '—'}
             sub="Full pipeline runs logged"
-          />
-          <MetricCard
+          /></Reveal>
+          <Reveal delay={0.16}><MetricCard
             label="Parts at risk"
             value={stats?.partsAtRisk ?? '—'}
             sub="Stockout within 7 days"
             tone={stats?.partsAtRisk > 0 ? 'crit' : 'ok'}
-          />
+          /></Reveal>
         </div>
 
         {/* --------------------------------------------- decision feed */}
@@ -254,7 +255,7 @@ export default function Operations() {
 
         {/* ------------------------------------------------- sidebar */}
         <div className="stack">
-          <Panel title="Active alerts" sub="Issues requiring attention" bodyClass="tight">
+          <Reveal><Panel title="Active alerts" sub="Issues requiring attention" bodyClass="tight">
             {alerts.map((a, i) => (
               <div className="alert-item" key={i}>
                 <Dot tone={a.tone} />
@@ -264,13 +265,13 @@ export default function Operations() {
                 </div>
               </div>
             ))}
-          </Panel>
+          </Panel></Reveal>
 
-          <Panel title="System health" sub="Telemetry and connection status" bodyClass="tight">
+          <Reveal delay={0.05}><Panel title="System health" sub="Telemetry and connection status" bodyClass="tight">
             <SystemHealth health={health} stats={stats} />
-          </Panel>
+          </Panel></Reveal>
 
-          <Panel title="Recent events" sub="Chronological system log" bodyClass="tight">
+          <Reveal delay={0.1}><Panel title="Recent events" sub="Chronological system log" bodyClass="tight">
             <div style={{ padding: '7px 0' }}>
               {events.length === 0 && <div className="empty">No events yet.</div>}
               {events.map((e, i) => (
@@ -280,7 +281,7 @@ export default function Operations() {
                 </div>
               ))}
             </div>
-          </Panel>
+          </Panel></Reveal>
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import {
 } from '../components/ui.jsx';
 import AgentResultCard from '../components/AgentResultCard.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
+import Reveal from '../components/Reveal.jsx';
 
 /**
  * Full replay of a stored run. `steps` and `advisor` are JSONB in Supabase, so
@@ -91,7 +92,11 @@ function Replay({ runId }) {
         </div>
       </Panel>
 
-      {steps.map((step) => <AgentResultCard key={step.agent} step={step} />)}
+      {steps.map((step, i) => (
+        <Reveal key={step.agent} delay={i * 0.04}>
+          <AgentResultCard step={step} />
+        </Reveal>
+      ))}
       {run.advisor && <AIAdvisorPanel advisor={run.advisor} />}
 
       {run.summary?.executiveSummary && (
@@ -129,7 +134,7 @@ export default function History() {
     <div className="stack">
       <ErrorBar message={error} />
 
-      <Panel
+      <Reveal><Panel
         title="Decision history"
         sub="Every pipeline run is logged and replayable"
         bodyClass="tight"
@@ -191,7 +196,7 @@ export default function History() {
             </table>
           </div>
         )}
-      </Panel>
+      </Panel></Reveal>
 
       {runId && <Replay runId={runId} />}
     </div>

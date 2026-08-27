@@ -6,6 +6,7 @@ import { Panel, StatusBadge, ErrorBar, Empty, Skeleton } from '../components/ui.
 import AgentPipeline from '../components/AgentPipeline.jsx';
 import AgentResultCard from '../components/AgentResultCard.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
+import Reveal from '../components/Reveal.jsx';
 
 const FILTERS = [
   { id: 'attention', label: 'Needs attention' },
@@ -219,7 +220,7 @@ export default function TaskQueue() {
           {allShown && result.advisor && <AIAdvisorPanel advisor={result.advisor} />}
 
           {allShown && (
-            <Panel title="Outcome" right={<StatusBadge status={result.summary.finalStatus} />}>
+            <Reveal><Panel title="Outcome" right={<StatusBadge status={result.summary.finalStatus} />}>
               <div className="stack">
                 <div className="facts">
                   <div className="fact"><div className="k">Order value</div><div className="v">{money(result.summary.orderValue)}</div></div>
@@ -253,7 +254,7 @@ export default function TaskQueue() {
                   <button className="btn" onClick={run} disabled={running}>Re-run analysis</button>
                 </div>
               </div>
-            </Panel>
+            </Panel></Reveal>
           )}
 
           {!running && !result && selected && (

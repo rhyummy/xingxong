@@ -97,19 +97,31 @@ async function loadFromSupabase() {
   source = 'supabase';
 }
 
+const LOAD_ATTEMPTS = 3;
+
 export async function loadCatalog() {
   if (supabaseEnabled) {
-    try {
-      await loadFromSupabase();
-      console.log(`Catalog loaded from Supabase: ${parts.length} parts`);
-      return source;
-    } catch (err) {
-      console.error(`Supabase load failed (${err.message}) — falling back to local JSON`);
+    // Transient failures here are costly: falling straight through to the
+    // 5-part JSON fixture would silently shrink a 40-part demo. Retry with
+    // backoff before conceding.
+    for (let attempt = 1; attempt <= LOAD_ATTEMPTS; attempt++) {
+      try {
+        await loadFromSupabase();
+        console.log(`Catalog loaded from Supabase: ${parts.length} parts`);
+        return source;
+      } catch (err) {
+        const last = attempt === LOAD_ATTEMPTS;
+        console.error(
+          `Supabase load attempt ${attempt}/${LOAD_ATTEMPTS} failed: ${err.message}` +
+            (last ? ' — falling back to local JSON' : ' — retrying')
+        );
+        if (!last) await new Promise((r) => setTimeout(r, attempt * 1000));
+      }
     }
   }
 
   loadFromFiles();
-  console.log(`Catalog loaded from local JSON: ${parts.length} parts`);
+  console.log(`Catalog loaded from local JSON: ${parts.length} parts (FALLBACK)`);
   return source;
 }
 

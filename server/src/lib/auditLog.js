@@ -5,28 +5,43 @@ import { supabase } from './supabase.js';
  * itself. Audit logging must never break the demo, so failures are logged and
  * swallowed rather than thrown.
  */
-export async function recordRun({ part, steps, summary }) {
+export async function recordRun({ part, steps, summary, advisor = null }) {
   if (!supabase) return null;
 
   const [demand, , decision, logistics] = steps;
 
+  const row = {
+    part_id: part.id,
+    status: decision.status,
+    predicted_quantity: decision.quantity ?? null,
+    order_value: decision.totalCost ?? null,
+    anomaly_detected: demand.anomalyDetected,
+    failed_guardrails: decision.failedGuardrails,
+    selected_supplier: decision.supplier?.id ?? null,
+    logistics_status: logistics.status,
+    steps,
+    summary,
+    advisor,
+  };
+
   try {
-    const { data: run, error: runError } = await supabase
+    let { data: run, error: runError } = await supabase
       .from('pipeline_runs')
-      .insert({
-        part_id: part.id,
-        status: decision.status,
-        predicted_quantity: decision.quantity ?? null,
-        order_value: decision.totalCost ?? null,
-        anomaly_detected: demand.anomalyDetected,
-        failed_guardrails: decision.failedGuardrails,
-        selected_supplier: decision.supplier?.id ?? null,
-        logistics_status: logistics.status,
-        steps,
-        summary,
-      })
+      .insert(row)
       .select('id')
       .single();
+
+    // If the advisor migration has not been applied yet, log the run without
+    // it rather than losing the whole audit record over one optional column.
+    if (runError && /advisor/.test(runError.message)) {
+      console.warn('pipeline_runs.advisor missing — apply supabase/migrations/001_advisor.sql');
+      const { advisor: _omitted, ...withoutAdvisor } = row;
+      ({ data: run, error: runError } = await supabase
+        .from('pipeline_runs')
+        .insert(withoutAdvisor)
+        .select('id')
+        .single());
+    }
 
     if (runError) throw new Error(runError.message);
 

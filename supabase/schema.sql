@@ -60,6 +60,7 @@ create table if not exists pipeline_runs (
   logistics_status   text,
   steps              jsonb not null,
   summary            jsonb not null,
+  advisor            jsonb,
   created_at         timestamptz not null default now()
 );
 

@@ -5,6 +5,7 @@ import { runProcurementDecision } from './agents/procurementDecision.js';
 import { runLogisticsCoordination } from './agents/logisticsCoordination.js';
 import { generateExecutiveSummary } from './lib/llm.js';
 import { recordRun } from './lib/auditLog.js';
+import { runEscalationAdvisor } from './agentic/escalationAdvisor.js';
 
 const MANUAL_CYCLE_HOURS = 96; // 4-day manual procurement baseline
 const AGENT_CYCLE_HOURS = 0.05; // ~3 minutes end-to-end
@@ -32,6 +33,15 @@ export async function runPipeline(partId) {
       ? `${part.name} hit its reorder point with ${demand.daysUntilStockout} days of stock left. All guardrails cleared, so a PO for ${decision.quantity} units was auto-issued to ${decision.supplier.name} at $${decision.totalCost}. Logistics status: ${logistics.status}.`
       : `${part.name} hit its reorder point with ${demand.daysUntilStockout} days of stock left, but ${decision.failedGuardrails.length} guardrail(s) blocked auto-approval (${decision.failedGuardrails.join(', ')}). The decision is queued for human review with ${decision.alternatives.length} ranked option(s) attached. Logistics status: ${logistics.status}.`;
 
+  // The advisor only runs on escalations — when the deterministic layer has
+  // already refused to act and a human now needs a recommendation. It never
+  // runs on auto-approvals, so the fast path stays fully deterministic and
+  // makes no network call.
+  const advisor =
+    decision.status === 'escalated'
+      ? await runEscalationAdvisor({ part, demand, evaluation, decision })
+      : null;
+
   const trail = { demand, evaluation, decision, logistics };
   const executiveSummary = await generateExecutiveSummary(trail, fallbackSummary);
 
@@ -46,7 +56,7 @@ export async function runPipeline(partId) {
     executiveSummary,
   };
 
-  const runId = await recordRun({ part, steps, summary });
+  const runId = await recordRun({ part, steps, summary, advisor });
 
-  return { runId, part, steps, summary };
+  return { runId, part, steps, advisor, summary };
 }

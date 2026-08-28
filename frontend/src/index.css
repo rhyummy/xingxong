@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Theme tokens
+   --------------------------------------------------------------------------
+   Every color used throughout AstraProcure is expressed as an RGB triplet
+   custom property so Tailwind's opacity modifiers (e.g. bg-fg/40) keep
+   working while the actual color swaps per theme. The [data-theme] attribute
+   is toggled on <html> by src/lib/theme.tsx (see ThemeProvider).
+   ========================================================================== */
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: 10 10 10;         /* page background ("ink") */
+  --color-panel: 17 18 20;      /* card surface */
+  --color-panel2: 22 23 26;     /* nested / elevated surface */
+  --color-line: 35 36 40;       /* borders / dividers */
+  --color-fg: 255 255 255;      /* primary foreground (text, inverted fills) */
+
+  --color-amber: 224 167 40;
+  --color-mint: 62 207 142;
+  --color-rose: 226 87 76;
+  --color-accent: 124 140 255;
+
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px rgba(0, 0, 0, 0.28);
+  --scrollbar-track: rgb(10 10 10);
+  --scrollbar-thumb: rgb(35 36 40);
+  --scrollbar-thumb-hover: rgb(46 47 52);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg: 246 246 248;
+  --color-panel: 255 255 255;
+  --color-panel2: 241 241 244;
+  --color-line: 224 224 230;
+  --color-fg: 12 13 16;
+
+  --color-amber: 176 121 12;
+  --color-mint: 21 138 92;
+  --color-rose: 197 58 48;
+  --color-accent: 79 92 224;
+
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 8px 24px rgba(20, 20, 30, 0.08);
+  --scrollbar-track: rgb(246 246 248);
+  --scrollbar-thumb: rgb(210 210 218);
+  --scrollbar-thumb-hover: rgb(190 190 200);
+}
+
+* { scroll-behavior: auto; }
+
+html, body, #root { height: 100%; }
+
+html { background: rgb(var(--color-bg)); }
+
+body {
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: rgb(var(--color-bg));
+  color: rgb(var(--color-fg));
+  transition: background-color .25s ease, color .25s ease;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+
+.card {
+  background: rgb(var(--color-panel));
+  border: 1px solid rgb(var(--color-line));
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-card);
+  transition: background-color .25s ease, border-color .25s ease;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.field {
+  background: rgb(var(--color-panel2));
+  border: 1px solid rgb(var(--color-line));
+  border-radius: 0.9rem;
+  color: rgb(var(--color-fg));
+  transition: background-color .25s ease, border-color .25s ease, color .25s ease;
+}
+
+.field::placeholder { color: rgba(var(--color-fg), 0.38); }
+
+.btn-primary {
+  background: rgb(var(--color-fg));
+  color: rgb(var(--color-bg));
+  border-radius: 999px;
+  font-weight: 600;
+  transition: transform .15s ease, opacity .15s ease, background-color .25s ease, color .25s ease;
+}
+.btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-ghost {
+  background: rgb(var(--color-panel2));
+  color: rgb(var(--color-fg) / 0.9);
+  border: 1px solid rgb(var(--color-line));
+  border-radius: 999px;
+  transition: background-color .15s ease, transform .15s ease, border-color .25s ease;
+}
+.btn-ghost:hover { background: rgb(var(--color-line)); transform: translateY(-1px); }
+
+.divider { border-color: rgb(var(--color-line)); }
+
+/* Sidebar-specific helpers */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.85rem;
+  font-size: 0.84rem;
+  color: rgb(var(--color-fg) / 0.55);
+  transition: background-color .15s ease, color .15s ease;
+}
+.nav-link:hover { background: rgb(var(--color-panel2)); color: rgb(var(--color-fg) / 0.9); }
+.nav-link.active {
+  background: rgb(var(--color-fg) / 0.08);
+  color: rgb(var(--color-fg));
+  font-weight: 600;
+}
+
+/* Theme toggle track */
+.theme-toggle-track {
+  background: rgb(var(--color-panel2));
+  border: 1px solid rgb(var(--color-line));
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}

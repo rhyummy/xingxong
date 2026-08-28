@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Rocket, Bell, Search, ChevronDown, RotateCcw, FileText, Download, Bot, UserCheck } from "lucide-react";
+import { Search, ChevronDown, RotateCcw, FileText, Download, Bot, UserCheck } from "lucide-react";
 import { Reveal } from "../components/Reveal";
 import { StatusPill } from "../components/StatusPill";
+import { AppShell } from "../components/AppShell";
 import { useLenis } from "../lib/useLenis";
 import { orderLines, approvers, auditTrail } from "../lib/mockData";
 
@@ -12,7 +12,6 @@ function inr(n: number) {
 
 export default function OrderBuilder() {
   useLenis();
-  const navigate = useNavigate();
   const [sourcing, setSourcing] = useState<"auto" | "preferred" | "manual">("auto");
 
   const subtotal = orderLines.reduce((s, l) => s + l.qty * l.unitPrice, 0);
@@ -25,54 +24,42 @@ export default function OrderBuilder() {
   const grandTotal = subtotal - discount + shipping + insurance + 2952 + 2952;
 
   return (
-    <div className="min-h-screen bg-ink">
-      <header className="flex flex-wrap items-center justify-between gap-4 px-8 py-4 border-b divider sticky top-0 bg-ink/90 backdrop-blur z-20">
-        <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2.5">
-          <span className="h-8 w-8 rounded-full bg-white text-ink grid place-items-center"><Rocket size={14} /></span>
-          <span className="font-display font-semibold">AstraProcure</span>
-        </button>
-        <button className="btn-ghost px-4 py-2 text-sm flex items-center gap-1.5">
-          Operations Workspace <ChevronDown size={12} />
-        </button>
-        <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-          <input className="field w-full pl-9 pr-3 py-2 text-sm outline-none" placeholder="Global search parts, suppliers, orders..." />
+    <AppShell
+      title="Order Builder"
+      subtitle="Operations Workspace — draft #AP-1982"
+      actions={
+        <div className="relative hidden lg:block w-64">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg/30" />
+          <input className="field w-full pl-9 pr-3 py-2 text-sm outline-none" placeholder="Search parts, suppliers, orders..." />
         </div>
-        <div className="flex items-center gap-3">
-          <button className="btn-ghost px-4 py-2 text-sm flex items-center gap-1.5"><Bell size={14} /> Notifications</button>
-          <div className="text-right text-xs">
-            <div className="font-medium">Maya Iyer</div>
-            <div className="text-white/40">Procurement Manager</div>
-          </div>
-        </div>
-      </header>
-
-      <main className="px-6 py-6 grid lg:grid-cols-[340px_1fr_360px] gap-5 max-w-[1700px] mx-auto">
+      }
+    >
+      <div className="px-4 md:px-6 py-6 grid lg:grid-cols-[340px_1fr_360px] gap-5 max-w-[1700px] mx-auto">
         {/* Order Composer */}
         <Reveal>
           <div className="card p-5">
             <div className="flex justify-between items-start mb-1">
               <h2 className="font-display font-semibold">Order Composer</h2>
-              <span className="text-xs text-white/30">Draft #AP-1982</span>
+              <span className="text-xs text-fg/30">Draft #AP-1982</span>
             </div>
-            <p className="text-white/40 text-xs mb-4">Build the order and attach compliance docs</p>
+            <p className="text-fg/40 text-xs mb-4">Build the order and attach compliance docs</p>
 
-            <label className="text-xs text-white/40 block mb-1">Add Line Item</label>
+            <label className="text-xs text-fg/40 block mb-1">Add Line Item</label>
             <div className="flex gap-2 mb-4">
               <input className="field flex-1 px-3 py-2 text-sm outline-none" placeholder="Search part number or supplier..." />
               <button className="btn-ghost px-4 py-2 text-sm">Add</button>
             </div>
 
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs text-white/40">Recent Parts</span>
-              <RotateCcw size={12} className="text-white/30" />
+              <span className="text-xs text-fg/40">Recent Parts</span>
+              <RotateCcw size={12} className="text-fg/30" />
             </div>
             <div className="space-y-2 mb-5">
               {orderLines.map((l) => (
                 <div key={l.sku} className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-medium">{l.name}</div>
-                    <div className="text-xs text-white/40">Mfg: {l.mfg}</div>
+                    <div className="text-xs text-fg/40">Mfg: {l.mfg}</div>
                   </div>
                   <button className="btn-ghost px-3 py-1 text-xs">Add</button>
                 </div>
@@ -80,8 +67,8 @@ export default function OrderBuilder() {
             </div>
 
             <div className="flex justify-between items-center mb-3">
-              <span className="text-xs text-white/40">Current Line Items ({orderLines.length})</span>
-              <span className="text-xs text-white/30">Editable</span>
+              <span className="text-xs text-fg/40">Current Line Items ({orderLines.length})</span>
+              <span className="text-xs text-fg/30">Editable</span>
             </div>
             <div className="space-y-3 mb-5">
               {orderLines.map((l) => (
@@ -89,23 +76,23 @@ export default function OrderBuilder() {
                   <div>
                     <div className="text-sm font-medium">{l.name}</div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-white/40">Qty:</span>
+                      <span className="text-xs text-fg/40">Qty:</span>
                       <input defaultValue={l.qty} className="field w-16 px-2 py-1 text-xs outline-none" />
                     </div>
                   </div>
                   <div className="text-right text-xs">
                     <div>{inr(l.unitPrice)}</div>
-                    <div className="text-white/40">Line {inr(l.qty * l.unitPrice)}</div>
+                    <div className="text-fg/40">Line {inr(l.qty * l.unitPrice)}</div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <span className="text-xs text-white/40 block mb-2">Sourcing Preference</span>
+            <span className="text-xs text-fg/40 block mb-2">Sourcing Preference</span>
             <div className="flex gap-4 mb-5 text-xs">
               {(["auto", "preferred", "manual"] as const).map((s) => (
                 <label key={s} className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={sourcing === s} onChange={() => setSourcing(s)} className="accent-white" />
+                  <input type="radio" checked={sourcing === s} onChange={() => setSourcing(s)} className="accent-fg" />
                   {s === "auto" ? "Auto-Source" : s === "preferred" ? "Preferred Supplier" : "Manual"}
                 </label>
               ))}
@@ -113,11 +100,11 @@ export default function OrderBuilder() {
 
             <div className="grid grid-cols-2 gap-3 mb-5">
               <div>
-                <label className="text-xs text-white/40 block mb-1">Required by</label>
+                <label className="text-xs text-fg/40 block mb-1">Required by</label>
                 <input defaultValue="12 Sep 2026" className="field w-full px-3 py-2 text-xs outline-none" />
               </div>
               <div>
-                <label className="text-xs text-white/40 block mb-1">Priority</label>
+                <label className="text-xs text-fg/40 block mb-1">Priority</label>
                 <select className="field w-full px-3 py-2 text-xs outline-none">
                   <option>Standard</option>
                   <option>Expedited</option>
@@ -125,7 +112,7 @@ export default function OrderBuilder() {
               </div>
             </div>
 
-            <span className="text-xs text-white/40 block mb-2">Attachments (Compliance)</span>
+            <span className="text-xs text-fg/40 block mb-2">Attachments (Compliance)</span>
             <div className="space-y-2 mb-2">
               {[
                 { name: "Factory-Certification-2026.pdf", meta: "Uploaded 18 Aug 2026 · 220KB" },
@@ -133,10 +120,10 @@ export default function OrderBuilder() {
               ].map((f) => (
                 <div key={f.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <FileText size={14} className="text-white/40" />
+                    <FileText size={14} className="text-fg/40" />
                     <div>
                       <div className="text-xs font-medium">{f.name}</div>
-                      <div className="text-[11px] text-white/30">{f.meta}</div>
+                      <div className="text-[11px] text-fg/30">{f.meta}</div>
                     </div>
                   </div>
                   <div className="flex gap-1">
@@ -146,7 +133,7 @@ export default function OrderBuilder() {
                 </div>
               ))}
             </div>
-            <p className="text-[11px] text-white/25 mb-4">Max 10 attachments · PDF, JPG</p>
+            <p className="text-[11px] text-fg/25 mb-4">Max 10 attachments · PDF, JPG</p>
 
             <div className="flex justify-between">
               <button className="btn-ghost px-4 py-2 text-xs">Save Draft</button>
@@ -161,18 +148,18 @@ export default function OrderBuilder() {
             <div className="flex flex-wrap justify-between items-start mb-1 gap-3">
               <div>
                 <h2 className="font-display font-semibold">Order Summary</h2>
-                <p className="text-white/40 text-xs mt-0.5">Review pricing, taxes (India GST), shipping and delivery windows</p>
+                <p className="text-fg/40 text-xs mt-0.5">Review pricing, taxes (India GST), shipping and delivery windows</p>
               </div>
               <div className="flex gap-6 text-xs text-right">
-                <div><div className="text-white/40">Order Date</div><div>22 Aug 2026</div></div>
-                <div><div className="text-white/40">Currency</div><div>INR</div></div>
+                <div><div className="text-fg/40">Order Date</div><div>22 Aug 2026</div></div>
+                <div><div className="text-fg/40">Currency</div><div>INR</div></div>
               </div>
             </div>
 
             <div className="overflow-x-auto mt-5 mb-6">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-white/40 border-b divider">
+                  <tr className="text-fg/40 border-b divider">
                     <th className="text-left font-normal py-2">Item / Description</th>
                     <th className="text-left font-normal py-2">Supplier</th>
                     <th className="text-left font-normal py-2">Qty</th>
@@ -186,12 +173,12 @@ export default function OrderBuilder() {
                     <tr key={l.sku}>
                       <td className="py-3">
                         <div className="font-medium">{l.name}</div>
-                        <div className="text-white/40">Mfg: {l.mfg} · SKU: {l.sku}</div>
+                        <div className="text-fg/40">Mfg: {l.mfg} · SKU: {l.sku}</div>
                       </td>
                       <td className="py-3">{l.mfg.split(" ")[0]}</td>
                       <td className="py-3">{l.qty}</td>
                       <td className="py-3">{l.unit}</td>
-                      <td className="py-3 text-white/40">{l.deliv}</td>
+                      <td className="py-3 text-fg/40">{l.deliv}</td>
                       <td className="py-3 text-right">{inr(l.qty * l.unitPrice)}</td>
                     </tr>
                   ))}
@@ -202,19 +189,19 @@ export default function OrderBuilder() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-semibold mb-1">Cost Breakdown</h3>
-                <p className="text-white/30 text-[11px] mb-3">Estimates shown. Supplier quotes override.</p>
+                <p className="text-fg/30 text-[11px] mb-3">Estimates shown. Supplier quotes override.</p>
                 <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between"><span className="text-white/40">Subtotal</span><span>{inr(subtotal)}</span></div>
-                  <div className="flex justify-between"><span className="text-white/40">Item-level Discounts</span><span>-{inr(discount)}</span></div>
-                  <div className="flex justify-between"><span className="text-white/40">Shipping &amp; Handling</span><span>{inr(shipping)}</span></div>
-                  <div className="flex justify-between"><span className="text-white/40">Insurance</span><span>{inr(insurance)}</span></div>
+                  <div className="flex justify-between"><span className="text-fg/40">Subtotal</span><span>{inr(subtotal)}</span></div>
+                  <div className="flex justify-between"><span className="text-fg/40">Item-level Discounts</span><span>-{inr(discount)}</span></div>
+                  <div className="flex justify-between"><span className="text-fg/40">Shipping &amp; Handling</span><span>{inr(shipping)}</span></div>
+                  <div className="flex justify-between"><span className="text-fg/40">Insurance</span><span>{inr(insurance)}</span></div>
                 </div>
                 <div className="mt-3 pt-3 border-t divider">
-                  <div className="text-white/40 text-xs mb-1.5">India GST (calculated)</div>
+                  <div className="text-fg/40 text-xs mb-1.5">India GST (calculated)</div>
                   <div className="space-y-1.5 text-xs">
-                    <div className="flex justify-between"><span className="text-white/40">CGST (9%)</span><span>{inr(2952)}</span></div>
-                    <div className="flex justify-between"><span className="text-white/40">SGST (9%)</span><span>{inr(2952)}</span></div>
-                    <div className="flex justify-between"><span className="text-white/40">IGST (0%)</span><span>{inr(0)}</span></div>
+                    <div className="flex justify-between"><span className="text-fg/40">CGST (9%)</span><span>{inr(2952)}</span></div>
+                    <div className="flex justify-between"><span className="text-fg/40">SGST (9%)</span><span>{inr(2952)}</span></div>
+                    <div className="flex justify-between"><span className="text-fg/40">IGST (0%)</span><span>{inr(0)}</span></div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center mt-4 pt-3 border-t divider">
@@ -225,22 +212,22 @@ export default function OrderBuilder() {
 
               <div>
                 <h3 className="text-sm font-semibold mb-1">Shipping Terms</h3>
-                <p className="text-white/40 text-xs mb-4">FOB Mumbai · Standard Carrier · Insurance Included</p>
+                <p className="text-fg/40 text-xs mb-4">FOB Mumbai · Standard Carrier · Insurance Included</p>
                 <h3 className="text-sm font-semibold mb-1">Expected Delivery Window</h3>
-                <div className="card !bg-panel2 h-24 mb-3 grid place-items-center text-white/20 text-xs">
+                <div className="card !bg-panel2 h-24 mb-3 grid place-items-center text-fg/20 text-xs">
                   Delivery route preview
                 </div>
-                <p className="text-white/30 text-[11px]">
+                <p className="text-fg/30 text-[11px]">
                   AXT-4512: 08 Sep – 12 Sep · Expedited option available
                 </p>
-                <p className="text-white/25 text-[11px] mt-2">
+                <p className="text-fg/25 text-[11px] mt-2">
                   Incoterms and lead-times are subject to supplier confirmation.
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t divider">
-              <button className="px-5 py-2.5 text-sm rounded-full bg-white text-ink font-semibold flex items-center gap-2">
+              <button className="px-5 py-2.5 text-sm rounded-full bg-fg text-ink font-semibold flex items-center gap-2">
                 <Bot size={14} /> Submit to Agent
               </button>
               <button className="btn-ghost px-5 py-2.5 text-sm flex items-center gap-2">
@@ -261,19 +248,19 @@ export default function OrderBuilder() {
               <h2 className="font-display font-semibold">Approval Timeline</h2>
               <StatusPill tone="amber">Status: Pending</StatusPill>
             </div>
-            <p className="text-white/40 text-xs mb-4">Staged approvals, delegation &amp; audit</p>
+            <p className="text-fg/40 text-xs mb-4">Staged approvals, delegation &amp; audit</p>
 
-            <h3 className="text-xs font-semibold text-white/60 mb-3">Required Approvers</h3>
+            <h3 className="text-xs font-semibold text-fg/60 mb-3">Required Approvers</h3>
             <div className="space-y-3 mb-5">
               {approvers.map((a) => (
                 <div key={a.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <span className="h-8 w-8 rounded-full bg-white/10 grid place-items-center text-[10px] font-semibold">
+                    <span className="h-8 w-8 rounded-full bg-fg/10 grid place-items-center text-[10px] font-semibold">
                       {a.name.split(" ").map((n) => n[0]).join("")}
                     </span>
                     <div>
                       <div className="text-xs font-medium">{a.delegated ? `Delegated: ${a.name}` : a.name}</div>
-                      <div className="text-[11px] text-white/40">{a.role}</div>
+                      <div className="text-[11px] text-fg/40">{a.role}</div>
                     </div>
                   </div>
                   <StatusPill tone={a.status === "Approved" ? "mint" : "amber"}>{a.status}{a.meta ? ` · ${a.meta}` : ""}</StatusPill>
@@ -284,22 +271,22 @@ export default function OrderBuilder() {
             <div className="card !bg-panel2 p-3 mb-5">
               <div className="flex justify-between text-xs mb-1">
                 <span className="font-semibold">Conditional Rules</span>
-                <span className="text-white/30">Thresholds</span>
+                <span className="text-fg/30">Thresholds</span>
               </div>
-              <p className="text-white/40 text-[11px]">
+              <p className="text-fg/40 text-[11px]">
                 Orders over ₹50,000 require CFO approval. Orders with hazardous materials require Compliance sign-off.
               </p>
             </div>
 
-            <h3 className="text-xs font-semibold text-white/60 mb-3">Audit Trail</h3>
+            <h3 className="text-xs font-semibold text-fg/60 mb-3">Audit Trail</h3>
             <div className="space-y-3 mb-5">
               {auditTrail.map((a) => (
                 <div key={a.title} className="flex justify-between items-start">
                   <div>
                     <div className="text-xs font-medium">{a.title}</div>
-                    <div className="text-[11px] text-white/30">{a.meta}</div>
+                    <div className="text-[11px] text-fg/30">{a.meta}</div>
                   </div>
-                  <span className="text-[11px] text-white/40">{a.status}</span>
+                  <span className="text-[11px] text-fg/40">{a.status}</span>
                 </div>
               ))}
             </div>
@@ -307,9 +294,9 @@ export default function OrderBuilder() {
             <div className="card !bg-panel2 p-3 mb-5">
               <div className="flex justify-between text-xs mb-1">
                 <span className="font-semibold">Delegation</span>
-                <span className="text-white/30">Manage</span>
+                <span className="text-fg/30">Manage</span>
               </div>
-              <p className="text-white/40 text-[11px] mb-3">
+              <p className="text-fg/40 text-[11px] mb-3">
                 Delegate pending approvals to backups, or set auto-delegate after 48 hours.
               </p>
               <button className="field w-full px-3 py-2 text-xs text-left flex justify-between items-center">
@@ -319,7 +306,7 @@ export default function OrderBuilder() {
 
             <div className="pt-3 border-t divider">
               <div className="text-xs font-semibold text-rose mb-1">Danger Zone</div>
-              <p className="text-white/30 text-[11px] mb-3">Destructive actions require confirmation.</p>
+              <p className="text-fg/30 text-[11px] mb-3">Destructive actions require confirmation.</p>
               <div className="flex gap-2">
                 <button className="btn-ghost flex-1 py-2 text-xs">Archive</button>
                 <button className="flex-1 py-2 text-xs rounded-full bg-rose/15 text-rose font-medium">Void Order</button>
@@ -327,7 +314,7 @@ export default function OrderBuilder() {
             </div>
           </div>
         </Reveal>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

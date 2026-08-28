@@ -11,6 +11,7 @@ import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
 import Reveal from '../components/Reveal.jsx';
 import AnimatedList from '../components/AnimatedList.jsx';
 import AnimatedBadge from '../components/AnimatedBadge.jsx';
+import { Ring } from '../components/StockGauge.jsx';
 
 const FILTERS = [
   { id: 'attention', label: 'Low stock' },
@@ -172,11 +173,27 @@ export default function TaskQueue() {
                   {selected.supplierCount === 1 && <AnimatedBadge text="1 supplier" tone="crit" />}
                 </div>
                 <div className="dim" style={{ marginTop: 2 }}>
-                  {partName(selected.name)} · {selected.currentStock} of {selected.reorderThreshold} in stock
-                  {' '}· {selected.supplierCount} supplier{selected.supplierCount === 1 ? '' : 's'}
+                  {partName(selected.name)} · {selected.supplierCount} supplier
+                  {selected.supplierCount === 1 ? '' : 's'}
                 </div>
               </div>
               <div className="row">
+                {/* Stock cover shown as an arc, so how close this is to
+                    running out reads before any number is parsed. */}
+                <Ring
+                  pct={(selected.currentStock / Math.max(1, selected.reorderThreshold)) * 100}
+                  size={62}
+                  thickness={7}
+                  tone={
+                    selected.currentStock / selected.reorderThreshold <= 0.35
+                      ? 'crit'
+                      : selected.triggerReady ? 'warn' : 'ok'
+                  }
+                  title={`${selected.currentStock} in stock, reorder at ${selected.reorderThreshold}`}
+                >
+                  <span className="rg-v xs">{selected.currentStock}</span>
+                  <span className="rg-l sm">of {selected.reorderThreshold}</span>
+                </Ring>
                 <button className="btn" onClick={() => navigate(`/app/parts/${selected.id}`)}>Details</button>
                 <button className="btn primary" onClick={run} disabled={running}>
                   {running ? 'Working…' : 'Run Analysis'}

@@ -1102,3 +1102,69 @@ html.lenis, html.lenis body { height: auto; }
   font-size: 11.5px;
 }
 .tipone { color: var(--text); font-family: var(--mono); font-size: 11.5px; }
+
+/* ------------------------------------------------------------ stock gauge */
+
+.ring { position: relative; display: grid; place-items: center; flex: none; }
+.ring svg { display: block; }
+/* Arc grows from empty on mount, so the value reads as being measured. */
+.ring-arc { transition: stroke-dasharray .7s cubic-bezier(.22,1,.36,1); }
+
+.ring-mid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.15;
+  padding: 0 12px;
+}
+.rg-v {
+  font-family: var(--display);
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+}
+.rg-v.sm { font-size: 23px; }
+.rg-v.xs { font-size: 14px; }
+.rg-l {
+  font-size: 11.5px;
+  color: var(--text-2);
+  margin-top: 3px;
+}
+.rg-l.sm { font-size: 9.5px; margin-top: 1px; line-height: 1.1; }
+.rg-s {
+  font-size: 10.5px;
+  color: var(--text-3);
+  margin-top: 3px;
+}
+
+.stockgauge {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+}
+.stockgauge-side { display: flex; gap: 18px; }
+
+.stockgauge-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--text-2);
+  max-width: 320px;
+}
+.stockgauge-note.ok { border-color: rgba(45,212,167,.28); background: var(--ok-bg); }
+.stockgauge-note.crit { border-color: rgba(229,86,78,.3); background: var(--crit-bg); }
+
+@media (max-width: 620px) {
+  .stockgauge { gap: 18px; justify-content: center; }
+  .stockgauge-note { max-width: none; }
+}

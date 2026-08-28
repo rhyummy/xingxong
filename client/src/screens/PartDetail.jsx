@@ -6,6 +6,7 @@ import {
   Panel, StatusBadge, ErrorBar, Empty, Skeleton, ScoreBar, Fact, Disclose, relTime, partName,
 } from '../components/ui.jsx';
 import { LineChart, BarList } from '../components/Charts.jsx';
+import StockGauge from '../components/StockGauge.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
 import Reveal from '../components/Reveal.jsx';
 
@@ -78,13 +79,19 @@ export default function PartDetail() {
             </div>
           </div>
 
+          <StockGauge
+            currentStock={part.currentStock}
+            reorderThreshold={part.reorderThreshold}
+            daysLeft={demand.daysUntilStockout}
+            dailyRate={demand.recentDailyRate}
+            leadTimeDays={evaluation.recommended?.leadTimeDays}
+          />
+
           <div className="facts">
-            <Fact label="In Stock" value={part.currentStock} />
-            <Fact label="Reorder At" value={part.reorderThreshold} />
             <Fact label="Price" value={unitMoney(part.unitCost)} />
-            <Fact label="Days Left" value={demand.daysUntilStockout ?? 0} />
             <Fact label="Need" value={`${demand.predictedQuantity} units`} />
             <Fact label="Suppliers" value={part.supplierCount} />
+            <Fact label="Category" value={part.category} />
           </div>
         </div>
       </Panel>

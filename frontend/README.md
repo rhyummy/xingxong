@@ -1,4 +1,4 @@
-# AstraProcure — Frontend
+#Frontend
 
 Enterprise procurement UI with a public marketing site, a dedicated login
 flow, and a persistent-sidebar operations app (Dashboard, Order Feed, Order

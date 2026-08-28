@@ -1,8 +1,8 @@
 /**
- * Inline SVG charts. No library: these are simple shapes, and hand-rolling
- * them keeps the bundle small and the styling consistent with the console
- * tokens. Every chart is theme-aware through CSS variables and carries an
- * accessible label.
+ * Flat inline-SVG charts: bar lists, a line chart and a gauge.
+ *
+ * The donut and column chart that used to live here were replaced by the
+ * extruded versions in Charts3D.jsx and removed rather than left to rot.
  */
 
 const TONE_VAR = {
@@ -16,56 +16,9 @@ const TONE_VAR = {
 
 const color = (t) => TONE_VAR[t] ?? t ?? 'var(--accent)';
 
-/* ------------------------------------------------------------------ donut */
+/* ----------------------------------------------------------------- legend */
 
-/**
- * Ring chart with the headline figure in the middle.
- * `slices` is [{ label, value, tone }].
- */
-export function Donut({ slices = [], size = 132, thickness = 15, center, centerLabel }) {
-  const total = slices.reduce((s, x) => s + x.value, 0);
-  const r = (size - thickness) / 2;
-  const c = 2 * Math.PI * r;
-
-  let offset = 0;
-
-  return (
-    <div className="donut-wrap">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img"
-           aria-label={slices.map((s) => `${s.label}: ${s.value}`).join(', ')}>
-        <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
-          <circle
-            cx={size / 2} cy={size / 2} r={r}
-            fill="none" stroke="var(--surface-3)" strokeWidth={thickness}
-          />
-          {total > 0 && slices.map((s) => {
-            const len = (s.value / total) * c;
-            const el = (
-              <circle
-                key={s.label}
-                cx={size / 2} cy={size / 2} r={r}
-                fill="none"
-                stroke={color(s.tone)}
-                strokeWidth={thickness}
-                strokeDasharray={`${len} ${c - len}`}
-                strokeDashoffset={-offset}
-                strokeLinecap="butt"
-              />
-            );
-            offset += len;
-            return el;
-          })}
-        </g>
-      </svg>
-
-      <div className="donut-center">
-        <div className="donut-v">{center ?? total}</div>
-        {centerLabel && <div className="donut-l">{centerLabel}</div>}
-      </div>
-    </div>
-  );
-}
-
+/** Swatch list, paired with a donut or any categorical chart. */
 export function Legend({ items = [] }) {
   return (
     <ul className="legend">
@@ -95,23 +48,6 @@ export function BarList({ data = [], max, unit = '' }) {
             <i style={{ width: `${(d.value / peak) * 100}%`, background: color(d.tone) }} />
           </span>
           <span className="bv mono">{d.value}{unit}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Vertical columns, for category-style comparisons. */
-export function ColumnChart({ data = [], height = 110 }) {
-  const peak = Math.max(...data.map((d) => d.value), 1);
-
-  return (
-    <div className="cols" style={{ height }}>
-      {data.map((d) => (
-        <div className="col" key={d.label} title={`${d.label}: ${d.value}`}>
-          <span className="cv mono">{d.value}</span>
-          <span className="cb" style={{ height: `${(d.value / peak) * 100}%`, background: color(d.tone) }} />
-          <span className="cl">{d.label}</span>
         </div>
       ))}
     </div>

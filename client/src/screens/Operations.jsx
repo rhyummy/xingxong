@@ -5,7 +5,9 @@ import { money } from '../money.js';
 import {
   Panel, MetricCard, StatusBadge, Dot, ErrorBar, Empty, Skeleton, relTime, shortName,
 } from '../components/ui.jsx';
-import { Donut, Legend, BarList, ColumnChart, Gauge } from '../components/Charts.jsx';
+import { Legend, BarList, Gauge } from '../components/Charts.jsx';
+import { Bars3D, Donut3D, Pareto } from '../components/Charts3D.jsx';
+import AnimatedBadge from '../components/AnimatedBadge.jsx';
 import Reveal from '../components/Reveal.jsx';
 
 const GUARDRAIL_NAME = {
@@ -78,7 +80,7 @@ export default function Operations() {
         <h1>Operations Overview</h1>
         <div className="row">
           <button className="btn sm" onClick={load}>Refresh</button>
-          <button className="btn primary" onClick={() => navigate('/queue')}>Run Analysis</button>
+          <button className="btn primary" onClick={() => navigate('/app/queue')}>Run Analysis</button>
         </div>
       </div>
 
@@ -102,12 +104,13 @@ export default function Operations() {
         <Reveal>
           <Panel title="Decision Split">
             <div className="chart-split">
-              <Donut
+              <Donut3D
                 slices={[
                   { label: 'Automated', value: auto, tone: 'ok' },
                   { label: 'Sent to human', value: escalated, tone: 'warn' },
                 ]}
-                center={runs.length ? `${Math.round((auto / runs.length) * 100)}%` : '—'}
+                size={140}
+                center={runs.length ? `${Math.round((auto / runs.length) * 100)}%` : '0%'}
                 centerLabel="automated"
               />
               <Legend
@@ -125,14 +128,14 @@ export default function Operations() {
             {guardData.length === 0 ? (
               <Empty>Nothing stopped yet.</Empty>
             ) : (
-              <BarList data={guardData} />
+              <Pareto data={guardData} height={190} />
             )}
           </Panel>
         </Reveal>
 
         <Reveal delay={0.1}>
           <Panel title="Low Stock by Category">
-            <ColumnChart data={catData} />
+            <Bars3D data={catData} height={190} depth={10} />
           </Panel>
         </Reveal>
       </div>
@@ -167,7 +170,7 @@ export default function Operations() {
                       <tr
                         key={r.id}
                         className={`clickable sev-${rowTone(r)}`}
-                        onClick={() => navigate(`/history/${r.id}`)}
+                        onClick={() => navigate(`/app/history/${r.id}`)}
                       >
                         <td>
                           <div className="mono" style={{ fontSize: 11.5 }}>{r.part_id}</div>
@@ -176,10 +179,15 @@ export default function Operations() {
                           </div>
                         </td>
                         <td>
-                          <StatusBadge
-                            label={r.status === 'auto-approved' ? 'Ordered' : 'Needs you'}
-                            tone={r.status === 'auto-approved' ? 'ok' : 'warn'}
-                          />
+                          {r.status === 'auto-approved' ? (
+                            <StatusBadge label="Ordered" tone="ok" />
+                          ) : (
+                            <AnimatedBadge
+                              text="Needs you"
+                              tone={r.anomaly_detected ? 'crit' : 'warn'}
+                              title="Blocked by a safety check. Waiting on a human."
+                            />
+                          )}
                         </td>
                         <td className="num">{money(r.order_value)}</td>
                         <td className="dim3">
@@ -216,10 +224,10 @@ export default function Operations() {
                     <div
                       className="lowrow"
                       key={p.id}
-                      onClick={() => navigate(`/parts/${p.id}`)}
+                      onClick={() => navigate(`/app/parts/${p.id}`)}
                       role="button"
                       tabIndex={0}
-                      onKeyDown={(e) => e.key === 'Enter' && navigate(`/parts/${p.id}`)}
+                      onKeyDown={(e) => e.key === 'Enter' && navigate(`/app/parts/${p.id}`)}
                     >
                       <div className="row" style={{ justifyContent: 'space-between' }}>
                         <span style={{ fontSize: 12 }}>{shortName(p.name)}</span>

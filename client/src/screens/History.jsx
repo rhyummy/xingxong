@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchRuns, fetchRun } from '../api.js';
 import { money } from '../money.js';
 import {
-  Panel, StatusBadge, ErrorBar, Empty, Skeleton, relTime,
+  Panel, StatusBadge, ErrorBar, Empty, Skeleton, Disclose, relTime,
 } from '../components/ui.jsx';
 import AgentResultCard from '../components/AgentResultCard.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
@@ -92,18 +92,25 @@ function Replay({ runId }) {
         </div>
       </Panel>
 
-      {steps.map((step, i) => (
-        <Reveal key={step.agent} delay={i * 0.04}>
-          <AgentResultCard step={step} />
-        </Reveal>
-      ))}
-      {run.advisor && <AIAdvisorPanel advisor={run.advisor} />}
-
       {run.summary?.executiveSummary && (
         <Panel title="Summary">
           <p className="reason">{run.summary.executiveSummary}</p>
         </Panel>
       )}
+
+      {run.advisor && <AIAdvisorPanel advisor={run.advisor} />}
+
+      <Panel title="Step detail" bodyClass="tight">
+        <div className="panel-body">
+          <Disclose label={`Open all ${steps.length} agent cards`}>
+            <div className="stack">
+              {steps.map((step) => (
+                <AgentResultCard key={step.agent} step={step} />
+              ))}
+            </div>
+          </Disclose>
+        </div>
+      </Panel>
     </div>
   );
 }
@@ -176,7 +183,7 @@ export default function History() {
                   <tr
                     key={r.id}
                     className={`clickable sev-${r.status === 'auto-approved' ? 'ok' : r.anomaly_detected ? 'crit' : 'warn'}`}
-                    onClick={() => navigate(`/history/${r.id}`)}
+                    onClick={() => navigate(`/app/history/${r.id}`)}
                   >
                     <td className="dim3">{relTime(r.created_at)}</td>
                     <td className="mono">{r.part_id}</td>

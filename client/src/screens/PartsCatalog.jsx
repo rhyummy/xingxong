@@ -90,7 +90,7 @@ export default function PartsCatalog() {
                   <tr
                     key={p.id}
                     className={`clickable ${p.triggerReady ? 'sev-warn' : 'sev-ok'}`}
-                    onClick={() => navigate(`/parts/${p.id}`)}
+                    onClick={() => navigate(`/app/parts/${p.id}`)}
                   >
                     <td>
                       <div className="mono" style={{ fontSize: 11.5 }}>{p.id}</div>

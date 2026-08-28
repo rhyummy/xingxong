@@ -1,4 +1,4 @@
-import { Panel, StatusBadge, Fact, ScoreBar, GuardrailChecklist, toneOf } from './ui.jsx';
+import { StatusBadge, Fact, ScoreBar, GuardrailChecklist, Disclose, toneOf } from './ui.jsx';
 import { money, unitMoney } from '../money.js';
 
 const AGENT_NO = {
@@ -18,6 +18,9 @@ const AGENT_TITLE = {
 
 function SupplierScoreTable({ ranked, recommendedId }) {
   if (!ranked?.length) return null;
+  // Only the shortlist matters at a glance; the rest sits behind a toggle.
+  const shown = ranked.slice(0, 3);
+  const hidden = ranked.length - shown.length;
   return (
     <div className="tscroll" style={{ marginTop: 10 }}>
       <table>
@@ -32,7 +35,7 @@ function SupplierScoreTable({ ranked, recommendedId }) {
           </tr>
         </thead>
         <tbody>
-          {ranked.map((s) => {
+          {shown.map((s) => {
             const chosen = s.id === recommendedId;
             return (
               <tr key={s.id} className={chosen ? 'sev-ok' : ''}>
@@ -56,6 +59,11 @@ function SupplierScoreTable({ ranked, recommendedId }) {
           })}
         </tbody>
       </table>
+      {hidden > 0 && (
+        <p className="note" style={{ padding: '8px 14px 0' }}>
+          {hidden} more supplier{hidden > 1 ? 's' : ''} considered. Full list on the part page.
+        </p>
+      )}
     </div>
   );
 }
@@ -120,7 +128,6 @@ export default function AgentResultCard({ step, guardrailExplanations }) {
 
       <div className="panel-body stack">
         <Facts step={step} />
-        <p className="reason">{step.reasoning}</p>
 
         {step.agent === 'Supplier Evaluation' && (
           <SupplierScoreTable ranked={step.ranked} recommendedId={step.recommended?.id} />
@@ -137,8 +144,7 @@ export default function AgentResultCard({ step, guardrailExplanations }) {
             </div>
 
             {step.status === 'escalated' && step.alternatives?.length > 0 && (
-              <div>
-                <div className="label" style={{ marginBottom: 4 }}>Other options</div>
+              <Disclose label="Other options">
                 <div className="tscroll">
                   <table>
                     <thead>
@@ -163,10 +169,14 @@ export default function AgentResultCard({ step, guardrailExplanations }) {
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </Disclose>
             )}
           </>
         )}
+
+        <Disclose label="Why?">
+          <p className="reason">{step.reasoning}</p>
+        </Disclose>
       </div>
     </section>
   );

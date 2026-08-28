@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { fetchParts, runPipeline } from '../api.js';
 import { money, unitMoney } from '../money.js';
 import {
-  Panel, StatusBadge, ErrorBar, Empty, Skeleton, partName, shortName,
+  Panel, StatusBadge, ErrorBar, Empty, Skeleton, Disclose, partName, shortName,
 } from '../components/ui.jsx';
 import AgentPipeline from '../components/AgentPipeline.jsx';
 import AgentResultCard from '../components/AgentResultCard.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
 import Reveal from '../components/Reveal.jsx';
+import AnimatedList from '../components/AnimatedList.jsx';
+import AnimatedBadge from '../components/AnimatedBadge.jsx';
 
 const FILTERS = [
   { id: 'attention', label: 'Low stock' },
@@ -162,41 +164,29 @@ export default function TaskQueue() {
         {/* -------------------------------------------------- detail */}
         <div className="stack">
           {selected && (
-            <Panel bodyClass="tight">
-              <div className="panel-body stack">
-                <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                  <div>
-                    <div className="row" style={{ gap: 8 }}>
-                      <h1 className="mono">{selected.id}</h1>
-                      <StatusBadge label={selected.criticality} tone={selected.criticality === 'critical' ? 'crit' : selected.criticality === 'high' ? 'warn' : 'idle'} />
-                      {selected.triggerReady && <StatusBadge label="low stock" tone="warn" />}
-                      {selected.supplierCount === 1 && <StatusBadge label="1 supplier" tone="crit" />}
-                    </div>
-                    <div className="dim" style={{ fontSize: 13, marginTop: 2 }}>{partName(selected.name)}</div>
-                  </div>
-                  <div className="row">
-                    <button className="btn sm" onClick={() => navigate(`/parts/${selected.id}`)}>
-                      Part Details
-                    </button>
-                    <button className="btn primary" onClick={run} disabled={running}>
-                      {running ? 'Working…' : 'Run Analysis'}
-                    </button>
-                  </div>
+            <div className="parthead">
+              <div>
+                <div className="row" style={{ gap: 8 }}>
+                  <h1 className="mono">{selected.id}</h1>
+                  {selected.triggerReady && <AnimatedBadge text="low stock" tone="warn" />}
+                  {selected.supplierCount === 1 && <AnimatedBadge text="1 supplier" tone="crit" />}
                 </div>
-
-                <div className="facts">
-                  <div className="fact"><div className="k">Category</div><div className="v" style={{ fontSize: 12 }}>{selected.category}</div></div>
-                  <div className="fact"><div className="k">On hand</div><div className="v">{selected.currentStock}</div></div>
-                  <div className="fact"><div className="k">Reorder Point</div><div className="v">{selected.reorderThreshold}</div></div>
-                  <div className="fact"><div className="k">List Price</div><div className="v" style={{ fontSize: 12 }}>{unitMoney(selected.unitCost)}</div></div>
-                  <div className="fact"><div className="k">Suppliers</div><div className="v">{selected.supplierCount}</div></div>
+                <div className="dim" style={{ marginTop: 2 }}>
+                  {partName(selected.name)} · {selected.currentStock} of {selected.reorderThreshold} in stock
+                  {' '}· {selected.supplierCount} supplier{selected.supplierCount === 1 ? '' : 's'}
                 </div>
               </div>
-            </Panel>
+              <div className="row">
+                <button className="btn" onClick={() => navigate(`/app/parts/${selected.id}`)}>Details</button>
+                <button className="btn primary" onClick={run} disabled={running}>
+                  {running ? 'Working…' : 'Run Analysis'}
+                </button>
+              </div>
+            </div>
           )}
 
-          {(running || result) && (
-            <Panel title="Pipeline" sub={running ? 'Working' : 'Done'}>
+          {running && (
+            <Panel title="Working">
               <AgentPipeline
                 steps={result ? result.steps.slice(0, visible) : []}
                 running={running || (result && visible < result.steps.length)}
@@ -206,20 +196,25 @@ export default function TaskQueue() {
             </Panel>
           )}
 
-          {result?.steps.slice(0, visible).map((step) => (
-            <AgentResultCard
-              key={step.agent}
-              step={step}
-              guardrailExplanations={{
-                'cost-threshold': `Order value ${money(decision?.totalCost)} exceeds the auto-approval ceiling`,
-                'demand-anomaly': 'Usage spike could signal equipment failure rather than routine wear',
-                'single-source-risk': 'No fallback supplier exists if this order slips',
-                'supplier-score-threshold': 'Top supplier scores below the required minimum',
-              }}
-            />
-          ))}
-
-          {allShown && result.advisor && <AIAdvisorPanel advisor={result.advisor} />}
+          {result && (
+            <AnimatedList>
+              {result.steps.slice(0, visible).map((step) => (
+                <AgentResultCard
+                  key={step.agent}
+                  step={step}
+                  guardrailExplanations={{
+                    'cost-threshold': `Order value ${money(decision?.totalCost)} exceeds the auto-approval ceiling`,
+                    'demand-anomaly': 'Usage spike could signal equipment failure rather than routine wear',
+                    'single-source-risk': 'No fallback supplier exists if this order slips',
+                    'supplier-score-threshold': 'Top supplier scores below the required minimum',
+                  }}
+                />
+              ))}
+              {allShown && result.advisor && (
+                <AIAdvisorPanel key="advisor" advisor={result.advisor} />
+              )}
+            </AnimatedList>
+          )}
 
           {allShown && (
             <Reveal><Panel title="Result" right={<StatusBadge status={result.summary.finalStatus} />}>
@@ -228,33 +223,33 @@ export default function TaskQueue() {
                   <div className="fact"><div className="k">Order Value</div><div className="v">{money(result.summary.orderValue)}</div></div>
                   <div className="fact"><div className="k">Time Taken</div><div className="v">{result.summary.decisionSeconds}s</div></div>
                   <div className="fact">
-                    <div className="k">Hours Saved</div>
-                    <div className="v">{result.summary.cycleTime.estimatedHoursSaved ?? 'not claimed'}</div>
-                  </div>
-                  <div className="fact">
                     <div className="k">Vs List Price</div>
                     <div className="v">
                       {result.summary.costComparison.premiumPct != null
                         ? `${result.summary.costComparison.premiumPct > 0 ? '+' : ''}${result.summary.costComparison.premiumPct}%`
-                        : '—'}
+                        : 'n/a'}
                     </div>
                   </div>
                 </div>
 
-                <p className="note">{result.summary.cycleTime.manualBenchmarkNote}</p>
                 <p className="reason">{result.summary.executiveSummary}</p>
 
                 <div className="row">
                   {result.summary.finalStatus === 'escalated' && (
-                    <button className="btn primary" onClick={() => navigate(`/approve/${result.runId ?? ''}`)}>
+                    <button className="btn primary" onClick={() => navigate(`/app/approve/${result.runId ?? ''}`)}>
                       Send for Approval
                     </button>
                   )}
-                  <button className="btn" onClick={() => navigate(`/parts/${result.part.id}`)}>
-                    Part Details
-                  </button>
+                  <button className="btn" onClick={() => navigate(`/app/parts/${result.part.id}`)}>Details</button>
                   <button className="btn" onClick={run} disabled={running}>Run Again</button>
                 </div>
+
+                <Disclose label="How these numbers are worked out">
+                  <p className="note">
+                    Time taken is measured. {result.summary.cycleTime.manualBenchmarkNote}
+                    {' '}Price is compared against the catalog list price.
+                  </p>
+                </Disclose>
               </div>
             </Panel></Reveal>
           )}

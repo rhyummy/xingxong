@@ -39,7 +39,7 @@ export default function SignIn({ onSignIn }) {
     const session = { operator: operator.trim(), workspaceId, remember };
     if (remember) saveSession(session);
     onSignIn(session);
-    navigate('/', { replace: true });
+    navigate('/app', { replace: true });
   }
 
   return (

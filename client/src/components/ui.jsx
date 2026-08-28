@@ -111,6 +111,16 @@ export function ErrorBar({ message, onRetry }) {
   );
 }
 
+/** Detail hidden behind a click. Keeps long reasoning off the first read. */
+export function Disclose({ label = 'Why?', children }) {
+  return (
+    <details className="disclose">
+      <summary>{label}</summary>
+      {children}
+    </details>
+  );
+}
+
 export function Empty({ children }) {
   return <div className="empty">{children}</div>;
 }

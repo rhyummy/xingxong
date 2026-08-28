@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { fetchPurchaseOrders, setPurchaseOrderStatus, fetchParts, fetchRun, fetchRuns } from '../api.js';
 import { money, unitMoney } from '../money.js';
 import {
-  Panel, StatusBadge, ErrorBar, Empty, Skeleton, GuardrailChecklist, relTime, toneOf, partName,
+  Panel, StatusBadge, ErrorBar, Empty, Skeleton, GuardrailChecklist, Disclose,
+  relTime, toneOf, partName,
 } from '../components/ui.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
 import Reveal from '../components/Reveal.jsx';
@@ -188,7 +189,7 @@ export default function Approvals() {
                     <button className="btn danger" disabled={busy || selected.status !== 'pending-approval'} onClick={() => decide('rejected')}>
                       Reject
                     </button>
-                    <button className="btn" disabled={busy} onClick={() => navigate(`/parts/${selected.part_id}`)}>
+                    <button className="btn" disabled={busy} onClick={() => navigate(`/app/parts/${selected.part_id}`)}>
                       View Part
                     </button>
                     <button className="btn approve" disabled={busy || selected.status !== 'pending-approval'} onClick={() => decide('approved')}>
@@ -219,35 +220,30 @@ export default function Approvals() {
               )}
 
               {run?.advisor && <AIAdvisorPanel advisor={run.advisor} />}
+
+              {run?.summary?.executiveSummary && (
+                <Panel title="Summary">
+                  <p className="reason">{run.summary.executiveSummary}</p>
+                  <Disclose label="Show the full decision path">
+                    <ApprovalTimeline run={run} />
+                  </Disclose>
+                </Panel>
+              )}
             </>
           )}
-        </div>
 
-        {/* ------------------------------------------- approval timeline */}
-        <div className="stack">
-          <Panel title="Progress">
-            <ApprovalTimeline run={run} />
-          </Panel>
-
-          {run?.summary?.executiveSummary && (
-            <Panel title="What Happened">
-              <p className="reason">{run.summary.executiveSummary}</p>
-            </Panel>
-          )}
-
-          <Panel title="Done" sub={`${settled.length}`} bodyClass="tight">
-            {settled.length === 0 ? (
-              <Empty>None yet.</Empty>
-            ) : (
+          {settled.length > 0 && (
+            <Panel title="Already decided" sub={`${settled.length}`} bodyClass="tight">
               <div className="tscroll">
                 <table>
                   <thead>
-                    <tr><th>PO</th><th className="num">Value</th><th>Status</th></tr>
+                    <tr><th>Order</th><th>Part</th><th className="num">Value</th><th>Status</th></tr>
                   </thead>
                   <tbody>
                     {settled.map((o) => (
                       <tr key={o.id} className={`clickable sev-${toneOf(o.status)}`} onClick={() => setSelectedId(o.id)}>
-                        <td className="mono" style={{ fontSize: 11 }}>{o.id}</td>
+                        <td className="mono" style={{ fontSize: 11.5 }}>{o.id}</td>
+                        <td className="mono" style={{ fontSize: 11.5 }}>{o.part_id}</td>
                         <td className="num">{money(o.total_cost)}</td>
                         <td><StatusBadge status={o.status} /></td>
                       </tr>
@@ -255,8 +251,8 @@ export default function Approvals() {
                   </tbody>
                 </table>
               </div>
-            )}
-          </Panel>
+            </Panel>
+          )}
         </div>
       </div>
     </div>

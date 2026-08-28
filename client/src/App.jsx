@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AppShell from './components/AppShell.jsx';
+import Landing from './screens/Landing.jsx';
 import SignIn from './screens/SignIn.jsx';
 import Operations from './screens/Operations.jsx';
 import TaskQueue from './screens/TaskQueue.jsx';
@@ -22,9 +23,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Landing />} />
         <Route path="/signin" element={<SignIn onSignIn={setSession} />} />
 
         <Route
+          path="/app"
           element={
             <RequireSession session={session}>
               <AppShell session={session} onSignOut={() => setSession(null)} />

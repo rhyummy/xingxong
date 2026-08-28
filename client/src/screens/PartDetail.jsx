@@ -3,9 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchPart, runAdvisor } from '../api.js';
 import { money, unitMoney } from '../money.js';
 import {
-  Panel, StatusBadge, ErrorBar, Empty, Skeleton, ScoreBar, Fact, relTime, partName,
+  Panel, StatusBadge, ErrorBar, Empty, Skeleton, ScoreBar, Fact, Disclose, relTime, partName,
 } from '../components/ui.jsx';
-import { LineChart, BarList, Donut, Legend } from '../components/Charts.jsx';
+import { LineChart, BarList } from '../components/Charts.jsx';
 import AIAdvisorPanel from '../components/AIAdvisorPanel.jsx';
 import Reveal from '../components/Reveal.jsx';
 
@@ -74,7 +74,7 @@ export default function PartDetail() {
               <button className="btn" onClick={investigate} disabled={advisorBusy}>
                 {advisorBusy ? 'Thinking…' : 'Ask AI'}
               </button>
-              <button className="btn primary" onClick={() => navigate('/queue')}>Run analysis</button>
+              <button className="btn primary" onClick={() => navigate('/app/queue')}>Run analysis</button>
             </div>
           </div>
 
@@ -122,38 +122,25 @@ export default function PartDetail() {
                 <Fact label="Peak" value={Math.max(...usageSeries, 0)} />
                 <Fact label="Need" value={`${demand.predictedQuantity} units`} />
               </div>
+              <Disclose label="Why?">
+                <p className="reason">{demand.reasoning}</p>
+              </Disclose>
             </div>
           </Panel></Reveal>
 
           {/* ------------------------------------------ suppliers */}
-          <Reveal><Panel title="Supplier Scores" >
-            <div className="l-2">
+          <Reveal><Panel title="Suppliers" bodyClass="tight">
+            <div className="panel-body">
               <BarList
-                data={(evaluation.ranked ?? []).map((s) => ({
-                  label: s.name.split(' ')[0],
-                  value: s.score,
-                  tone: s.id === evaluation.recommended?.id ? 'ok' : 'idle',
+                data={(evaluation.ranked ?? []).map((sup) => ({
+                  label: sup.name.split(' ')[0],
+                  value: sup.score,
+                  tone: sup.id === evaluation.recommended?.id ? 'ok' : 'idle',
                 }))}
                 max={100}
               />
-              <BarList
-                data={(evaluation.ranked ?? []).map((s) => ({
-                  label: s.name.split(' ')[0],
-                  value: s.leadTimeDays,
-                  tone: s.leadTimeDays > (demand.daysUntilStockout ?? 99) ? 'crit' : 'ok',
-                }))}
-                unit="d"
-              />
             </div>
-            <p className="note" style={{ marginTop: 10 }}>
-              Left: overall score. Right: delivery days. Red means it arrives too late.
-            </p>
-          </Panel></Reveal>
 
-          <Reveal><Panel
-            title="All Suppliers"
-            bodyClass="tight"
-          >
             <div className="tscroll">
               <table>
                 <thead>
@@ -197,7 +184,12 @@ export default function PartDetail() {
               </table>
             </div>
             <div className="panel-body">
-              <p className="reason">{evaluation.reasoning}</p>
+              <Disclose label="How suppliers are scored">
+                <p className="note">
+                  Reliability 40%, defect rate 25%, price 20%, delivery time 15%.
+                </p>
+                <p className="reason">{evaluation.reasoning}</p>
+              </Disclose>
             </div>
           </Panel></Reveal>
 
@@ -231,7 +223,7 @@ export default function PartDetail() {
                         <td className="num">{money(h.order_value)}</td>
                         <td className="dim3">{h.failed_guardrails?.length ? h.failed_guardrails.join(', ') : 'None'}</td>
                         <td className="dim3">{String(h.logistics_status ?? 'not set').replace(/-/g, ' ')}</td>
-                        <td><Link className="btn sm" to={`/history/${h.id}`}>Replay</Link></td>
+                        <td><Link className="btn sm" to={`/app/history/${h.id}`}>Replay</Link></td>
                       </tr>
                     ))}
                   </tbody>
@@ -245,11 +237,11 @@ export default function PartDetail() {
         <div className="stack">
           <Panel title="Actions">
             <div className="stack" style={{ gap: 7 }}>
-              <button className="btn wide primary" onClick={() => navigate('/queue')}>Run Analysis</button>
+              <button className="btn wide primary" onClick={() => navigate('/app/queue')}>Run Analysis</button>
               <button className="btn wide" onClick={investigate} disabled={advisorBusy}>
                 {advisorBusy ? 'Thinking…' : 'Ask AI'}
               </button>
-              <button className="btn wide" onClick={() => navigate('/approvals')}>Approvals</button>
+              <button className="btn wide" onClick={() => navigate('/app/approvals')}>Approvals</button>
             </div>
             <p className="note" style={{ marginTop: 9 }}>
 AI only responds when this part needs a human decision.
@@ -267,7 +259,7 @@ AI only responds when this part needs a human decision.
                     key={r.id}
                     className="alert-item"
                     style={{ gridTemplateColumns: '1fr auto', cursor: 'pointer' }}
-                    onClick={() => navigate(`/parts/${r.id}`)}
+                    onClick={() => navigate(`/app/parts/${r.id}`)}
                   >
                     <div>
                       <div className="alert-t mono" style={{ fontSize: 11.5 }}>{r.id}</div>
@@ -294,26 +286,6 @@ Numbers show how much more each part is being used than normal. Several
             </div>
           </Panel>
 
-          <Panel title="Contacts" bodyClass="tight">
-            {/* MOCK: no contacts table exists in the backend yet. */}
-            <div className="alert-item" style={{ gridTemplateColumns: '1fr auto' }}>
-              <div>
-                <div className="alert-t">Procurement owner</div>
-                <div className="alert-s">Maintenance planning desk</div>
-              </div>
-              <span className="badge idle">internal</span>
-            </div>
-            {evaluation.ranked?.slice(0, 2).map((s) => (
-              <div className="alert-item" key={s.id} style={{ gridTemplateColumns: '1fr auto' }}>
-                <div>
-                  <div className="alert-t">{s.name}</div>
-                  <div className="alert-s">{s.region ?? 'Supplier'}</div>
-                </div>
-                <span className="badge idle">vendor</span>
-              </div>
-            ))}
-            <div className="panel-body"><p className="note">Sample contacts.</p></div>
-          </Panel>
         </div>
       </div>
     </div>

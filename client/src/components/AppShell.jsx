@@ -6,11 +6,11 @@ import { Dot } from './ui.jsx';
 import { useLenis } from '../lib/useLenis.js';
 
 const NAV = [
-  { to: '/', label: 'Overview', icon: '▦', end: true },
-  { to: '/queue', label: 'Run Analysis', icon: '▶' },
-  { to: '/parts', label: 'Parts', icon: '▤' },
-  { to: '/approvals', label: 'Approvals', icon: '✓', badge: 'pendingApprovals' },
-  { to: '/history', label: 'History', icon: '↻' },
+  { to: '/app', label: 'Overview', icon: '▦', end: true },
+  { to: '/app/queue', label: 'Run Analysis', icon: '▶' },
+  { to: '/app/parts', label: 'Parts', icon: '▤' },
+  { to: '/app/approvals', label: 'Approvals', icon: '✓', badge: 'pendingApprovals' },
+  { to: '/app/history', label: 'History', icon: '↻' },
 ];
 
 function shiftName(d) {
@@ -51,7 +51,7 @@ export default function AppShell({ session, onSignOut }) {
     <div className="shell">
       {/* ------------------------------------------------------ sidebar */}
       <aside className="side">
-        <div className="side-brand">
+        <div className="side-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
           <span className="cmdbar-mark">S</span>
           <span>
             <b>Sentinel</b>
